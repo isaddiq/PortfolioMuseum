@@ -1,0 +1,57 @@
+name: Update Google Scholar metrics
+
+# Refreshes data/scholar.json - the profile metrics and each paper's "Cited by"
+# count - four times a day (every 6 hours) and pushes the change, which
+# republishes the GitHub Pages site. Because the numbers ship in
+# the repo, every visitor sees the same up-to-date figures - no browser cache
+# or localStorage involved.
+#
+# Note: GitHub disables scheduled workflows in repositories with no activity
+# for 60 days. If the metrics ever stop refreshing, re-enable this workflow
+# from the Actions tab (or just run it manually once).
+
+on:
+  schedule:
+    # 00:17, 06:17, 12:17 and 18:17 UTC. The offset keeps the job away from the
+    # top of the hour, when GitHub's scheduler is busiest.
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-scholar
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Read the Google Scholar profile
+        run: node scripts/update-scholar.mjs
+
+      - name: Commit refreshed metrics
+        env:
+          # The repo's pre-commit hook re-stamps site dates; this job only ever
+          # touches data/scholar.json, so keep it out of the way.
+          SKIP_DATESTAMP: '1'
+        run: |
+          if git diff --quiet -- data/scholar.json; then
+            echo "Metrics unchanged - nothing to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/scholar.json
+          git commit -m "chore: update Google Scholar metrics"
+          git push

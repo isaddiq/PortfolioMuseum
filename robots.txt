@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Allow: /assets/css/
+Allow: /assets/js/
+Allow: /assets/images/
+Allow: /assets/icons/
+Allow: /assets/logos/
+
+# Block unnecessary crawling
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /node_modules/
+
+# Sitemap
+Sitemap: https://isaddiq.github.io/sitemap.xml

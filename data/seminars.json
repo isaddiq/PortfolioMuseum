@@ -1,0 +1,21 @@
+{
+  "seminars": [
+    {
+      "id": "seminar_001",
+      "title": "CIOB Academic Summit 2026",
+      "type": "Seminar",
+      "role": "Attendee",
+      "organizer": "The Chartered Institute of Building (CIOB)",
+      "date": "2026",
+      "location": "Online",
+      "description": "Attended the CIOB Academic Summit 2026, hosted by the Chartered Institute of Building, bringing together academics and researchers to share developments in education, research, and practice across the built environment.",
+      "image": "assets/images/seminar/Seminar_CIOB.jpg",
+      "topics": [
+        "Built Environment",
+        "Construction Education",
+        "Academic Research",
+        "Professional Development"
+      ]
+    }
+  ]
+}

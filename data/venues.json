@@ -1,0 +1,7 @@
+{
+  "note": "Cover images for publication venues, keyed by the exact 'journal' or 'conference' name in publications.json. A paper whose venue has a cover hangs as that cover; the others get a generated poster. After adding an image, run: python scripts/build-museum-textures.py",
+  "covers": {
+    "Automation in Construction": "assets/images/venues/automation-in-construction.jpg",
+    "Journal of Computational Design and Engineering": "assets/images/venues/journal-of-computational-design-and-engineering.jpg"
+  }
+}

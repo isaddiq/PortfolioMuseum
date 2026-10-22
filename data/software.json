@@ -1,0 +1,1278 @@
+{
+  "tools": [
+    {
+      "id": "bim2bot-lab",
+      "navLabel": "BIM2Bot Lab",
+      "navIcon": "fas fa-route",
+      "title": "BIM2Bot Lab",
+      "logo": {
+        "light": "assets/logos/software/bim2bot-wordmark-light.svg",
+        "dark": "assets/logos/software/bim2bot-wordmark-dark.svg",
+        "alt": "BIM2Bot Lab logo"
+      },
+      "description": "From IFC model to robot route, entirely in the browser. A free construction informatics lab that explores IFC models, turns them into maps a robot can plan on, and simulates robot fleets moving through the building.",
+      "previewImage": "assets/images/software/bim2bot-lab-hero.webp",
+      "badges": [
+        {
+          "label": "Web App",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Robot Navigation",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "IFC 2x3 · 4 · 4.3",
+          "variant": "corresponding"
+        },
+        {
+          "label": "web-ifc (WASM)",
+          "variant": "corresponding"
+        },
+        {
+          "label": "React 18",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Three.js",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Runs in Browser",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "MIT License",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [
+        {
+          "label": "Open the App",
+          "icon": "fas fa-external-link-alt",
+          "href": "https://isaddiq.github.io/BIM2Bot-Lab/"
+        },
+        {
+          "label": "View on GitHub",
+          "icon": "fab fa-github",
+          "href": "https://github.com/isaddiq/BIM2Bot-Lab"
+        },
+        {
+          "label": "Sponsor",
+          "icon": "fas fa-heart",
+          "href": "https://github.com/sponsors/isaddiq",
+          "variant": "sponsor-link"
+        },
+        {
+          "label": "Buy Me a Coffee",
+          "icon": "fas fa-mug-hot",
+          "href": "https://buymeacoffee.com/saddiqr97z",
+          "variant": "coffee-link"
+        }
+      ],
+      "sections": [
+        {
+          "type": "info",
+          "title": "IFC to Robot Route in the Browser",
+          "paragraphs": [
+            "BIM2Bot Lab is a free construction informatics lab that runs in the browser. Open an IFC model to explore its geometry and semantics, turn it into maps a robot can plan on, and simulate robot fleets moving through the building. Every navigation result can be traced back to the IFC elements and processing steps that produced it.",
+            "Nothing is uploaded: IFC2x3, IFC4 and IFC4.3 files are parsed on your device with <strong>web-ifc</strong> (WebAssembly). A <strong>room graph</strong> (S1–S5) links storeys, rooms, doors, stairs, ramps and lifts, while <strong>occupancy grids</strong> (G1–G6) rasterise floors and obstacles, carve doors, inflate for the robot's size, and run multi-level A* path search. Each map cell and graph edge records the IFC element that produced it."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Key Features",
+          "items": [
+            {
+              "icon": "fas fa-compass",
+              "html": "<strong>Explore:</strong> 3D and 2D IFC viewer with model browser, IFC schema browser, inspector, search, and model checks"
+            },
+            {
+              "icon": "fas fa-route",
+              "html": "<strong>Navigate:</strong> occupancy grids and a room graph derived from IFC, with multi-level A* routes"
+            },
+            {
+              "icon": "fas fa-robot",
+              "html": "Configurable robot profiles: width, height, clearance, and stair or lift use"
+            },
+            {
+              "icon": "fas fa-ban",
+              "html": "What-if analysis with user-placed obstacles, blocked doors, and lifts added to stair cores"
+            },
+            {
+              "icon": "fas fa-search-location",
+              "html": "Cell-level traceability: see which IFC element and pipeline step made a cell free, blocked, or too narrow"
+            },
+            {
+              "icon": "fas fa-users",
+              "html": "<strong>Simulate:</strong> deterministic, seeded fleets with lift scheduling, congestion handling, and human–robot interaction"
+            },
+            {
+              "icon": "fas fa-chart-bar",
+              "html": "Results with makespan, throughput, congestion heatmaps, lift waits, and JSON export"
+            },
+            {
+              "icon": "fas fa-user-shield",
+              "html": "Privacy by design: files stay on your device, hosted as a static site on GitHub Pages"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-compass",
+              "title": "Explore (Version 1)",
+              "subtitle": "IFC viewer and semantic inspection",
+              "duration": "3D, 3D + 2D, and 2D floor-plan layouts",
+              "capabilities": [
+                {
+                  "icon": "fas fa-cube",
+                  "label": "Shaded, X-ray and wireframe modes"
+                },
+                {
+                  "icon": "fas fa-layer-group",
+                  "label": "Storey isolation and plan cuts"
+                },
+                {
+                  "icon": "fas fa-ruler-combined",
+                  "label": "Section box and measure"
+                },
+                {
+                  "icon": "fas fa-sitemap",
+                  "label": "IFC schema browser"
+                },
+                {
+                  "icon": "fas fa-info-circle",
+                  "label": "Navigation semantics inspector"
+                },
+                {
+                  "icon": "fas fa-tachometer-alt",
+                  "label": "Building intelligence dashboard"
+                }
+              ]
+            },
+            {
+              "icon": "fas fa-route",
+              "title": "Navigate (Version 2)",
+              "subtitle": "Room graph and occupancy-grid planning",
+              "duration": "Plan on the room graph or the occupancy grid",
+              "capabilities": [
+                {
+                  "icon": "fas fa-robot",
+                  "label": "Robot profiles"
+                },
+                {
+                  "icon": "fas fa-project-diagram",
+                  "label": "Multi-level A* routes"
+                },
+                {
+                  "icon": "fas fa-door-closed",
+                  "label": "Blocked doors and obstacles"
+                },
+                {
+                  "icon": "fas fa-search-location",
+                  "label": "Cell traceability"
+                }
+              ]
+            },
+            {
+              "icon": "fas fa-robot",
+              "title": "Simulate (Version 3)",
+              "subtitle": "Multi-robot fleet simulation",
+              "duration": "Deterministic and seeded, with a fixed time step",
+              "capabilities": [
+                {
+                  "icon": "fas fa-truck",
+                  "label": "Up to 8 robots and custom missions"
+                },
+                {
+                  "icon": "fas fa-arrows-alt-v",
+                  "label": "Lift scheduling"
+                },
+                {
+                  "icon": "fas fa-traffic-light",
+                  "label": "Congestion and deadlocks"
+                },
+                {
+                  "icon": "fas fa-walking",
+                  "label": "Human–robot interaction"
+                },
+                {
+                  "icon": "fas fa-file-export",
+                  "label": "Metrics and JSON export"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "title": "Run Locally",
+          "paragraphs": [
+            "Use the <a href=\"https://isaddiq.github.io/BIM2Bot-Lab/\" target=\"_blank\" rel=\"noopener\">live app</a>, or serve it locally (a local HTTP server is needed because <code>file://</code> URLs block WASM):"
+          ],
+          "code": "git clone https://github.com/isaddiq/BIM2Bot-Lab.git\ncd BIM2Bot-Lab\nnpx serve .            # or: python -m http.server 8080"
+        },
+        {
+          "type": "media",
+          "title": "BIM2Bot Lab Preview",
+          "media": "image",
+          "autoWrap": true,
+          "src": "assets/images/software/bim2bot-lab-hero.webp",
+          "alt": "BIM2Bot Lab simulating a robot mission on an office model, with the 3D view, the 2D floor plan and the IFC inspector side by side",
+          "imageClass": "media-image-contain"
+        }
+      ]
+    },
+    {
+      "id": "reunixchange",
+      "navLabel": "ReUnixchange",
+      "navIcon": "fas fa-exchange-alt",
+      "title": "ReUniXchange",
+      "description": "Data exchange platform for BIM interoperability and standardized information sharing across AEC workflows.",
+      "previewImage": "assets/images/covers/software-cover.webp",
+      "badges": [
+        {
+          "label": "Data Exchange",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "BIM Interoperability",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "OBJ",
+          "variant": "corresponding"
+        },
+        {
+          "label": "CSV",
+          "variant": "corresponding"
+        },
+        {
+          "label": "XML",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Autodesk Revit",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "Unity",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [
+        {
+          "label": "View Paper",
+          "icon": "fas fa-file-alt",
+          "href": "https://doi.org/10.1016/j.autcon.2025.106409"
+        },
+        {
+          "label": "View on Autodesk App Store",
+          "icon": "fas fa-cube",
+          "href": "https://apps.autodesk.com/RVT/en/Detail/Index?id=6622158299438821562&appLang=en&os=Win64"
+        },
+        {
+          "label": "View on GitHub",
+          "icon": "fab fa-github",
+          "href": "https://github.com/isaddiq/ReUnixchange"
+        },
+        {
+          "label": "Sponsor",
+          "icon": "fas fa-heart",
+          "href": "https://github.com/sponsors/isaddiq",
+          "variant": "sponsor-link"
+        },
+        {
+          "label": "Buy Me a Coffee",
+          "icon": "fas fa-mug-hot",
+          "href": "https://buymeacoffee.com/saddiqr97z",
+          "variant": "coffee-link"
+        }
+      ],
+      "sections": [
+        {
+          "type": "info",
+          "title": "Data Exchange Platform",
+          "paragraphs": [
+            "ReUniXchange is a cutting-edge Revit plugin that enables seamless export of BIM geometry, metadata, and materials to Unity. It supports modular construction workflows and immersive XR applications by bridging the gap between design and visualization environments. The plugin allows users to assign shared parameters (ModularID) to Revit group components, extract structured metadata into CSV format, export 3D views as OBJ files with MTL and texture data, and re-import any changes made in Unity through an XML file.",
+            "For modular projects, the plugin can automatically generate ModularID parameters based on group names, enabling logical tracking and reconstruction of elements inside Unity. Metadata from Revit views can be exported to CSV and attached to 3D objects inside Unity to enable semantic enrichment, selection, and inspection during runtime. Material definitions used in Revit are also exported into Unity-readable MTL files with associated texture images."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Core Infrastructure Components",
+          "items": [
+            {
+              "icon": "fas fa-cog",
+              "html": "Modular ID Parameter Assignment in Revit"
+            },
+            {
+              "icon": "fas fa-database",
+              "html": "Semantic and Metadata Extraction to CSV"
+            },
+            {
+              "icon": "fas fa-paint-brush",
+              "html": "Material Export and Unity MTL Conversion"
+            },
+            {
+              "icon": "fas fa-cube",
+              "html": "3D Model Export with Textures and Materials"
+            },
+            {
+              "icon": "fas fa-sitemap",
+              "html": "Unity Hierarchy Creation for Components"
+            },
+            {
+              "icon": "fas fa-sync-alt",
+              "html": "Bidirectional XML-based Data Exchange"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-exchange-alt",
+              "title": "Platform Capabilities",
+              "subtitle": "Advanced BIM-to-Unity Workflow",
+              "duration": "Cross-Platform Integration Solution",
+              "capabilities": [
+                {
+                  "icon": "fas fa-exchange-alt",
+                  "label": "BIM Data Exchange"
+                },
+                {
+                  "icon": "fas fa-sync",
+                  "label": "Synchronization"
+                },
+                {
+                  "icon": "fas fa-shield-alt",
+                  "label": "Semantic Enrichment"
+                },
+                {
+                  "icon": "fas fa-network-wired",
+                  "label": "Revit API Integration"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "media",
+          "title": "ReUniXchange Demonstration",
+          "media": "video",
+          "src": "https://www.youtube.com/embed/CQp8Uhdefsk?start=39",
+          "iframeTitle": "ReUnixchange Plugin Demo"
+        }
+      ]
+    },
+    {
+      "id": "ai-chatbot",
+      "navLabel": "BIM Network Graph Maker",
+      "navIcon": "fas fa-robot",
+      "title": "BIM Network Graph Maker",
+      "description": "Professional data visualization solutions for Building Information Modeling workflows. Transform your architectural and engineering data into interactive network diagrams.",
+      "previewImage": "assets/images/software/bim-graph-visualization-preview.jpg",
+      "badges": [
+        {
+          "label": "BIM",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "IFC",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Network Graph",
+          "variant": "corresponding"
+        },
+        {
+          "label": "ArchiCAD",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "Revit",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "CSV",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "Semantic relationships",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [
+        {
+          "label": "Try it Now",
+          "icon": "fas fa-external-link-alt",
+          "href": "https://isaddiq.github.io/BIMUniXchange/"
+        },
+        {
+          "label": "Sponsor",
+          "icon": "fas fa-heart",
+          "href": "https://github.com/sponsors/isaddiq",
+          "variant": "sponsor-link"
+        },
+        {
+          "label": "Buy Me a Coffee",
+          "icon": "fas fa-mug-hot",
+          "href": "https://buymeacoffee.com/saddiqr97z",
+          "variant": "coffee-link"
+        }
+      ],
+      "sections": [
+        {
+          "type": "info",
+          "title": "Automatic Network Graph Generation",
+          "paragraphs": [
+            "This specialized application is designed for AEC professionals who need to visualize complex relationships within their BIM models. Each tool processes CSV/IFC data exports (by ReUniXchange for Autodesk Revit and ArchUniXchange for ArchiCAD, and IFC export as typical IFC from either BIM authoring tool) to create interactive network diagrams that reveal connections, dependencies, and hierarchies in your building information models."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Core Features",
+          "items": [
+            {
+              "icon": "fas fa-book",
+              "html": "Create Network Diagram for IFC, and CSV"
+            },
+            {
+              "icon": "fas fa-tools",
+              "html": "Create Hierachy based on different metadata"
+            },
+            {
+              "icon": "fas fa-hammer",
+              "html": "Automatic Calculation of elements and its types"
+            },
+            {
+              "icon": "fas fa-leaf",
+              "html": "IFC semantic Verification"
+            },
+            {
+              "icon": "fas fa-laptop-code",
+              "html": "ArchiCAD and Autodesk Revit IFC and CSV support"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-robot",
+              "title": "Data Visualization",
+              "subtitle": "BIM Network Graph Generation",
+              "duration": "Interactive Relationship Mapping"
+            }
+          ]
+        },
+        {
+          "type": "media",
+          "title": "Network Graph Visualization",
+          "media": "image",
+          "src": "assets/images/software/bim-graph-visualization-preview.jpg",
+          "alt": "BIM Network Graph Visualization",
+          "imageClass": "media-image-full"
+        }
+      ]
+    },
+    {
+      "id": "bimunixchange",
+      "navLabel": "BIMUniXchange",
+      "navIcon": "fas fa-vr-cardboard",
+      "title": "BIMUniXchange",
+      "description": "Seamless AEC-to-XR pipeline for immersive construction visualization, connecting Revit, ArchiCAD, and Unity for WebXR-ready BIM experiences.",
+      "previewImage": "assets/images/software/bimunixchange-aec-to-xr-pipeline.png",
+      "badges": [
+        {
+          "label": "BIM Interoperability",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "XR Ready",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Autodesk Revit",
+          "variant": "corresponding"
+        },
+        {
+          "label": "ArchiCAD",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Unity",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "Meta Quest 3",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "MIT License",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [
+        {
+          "label": "View Paper",
+          "icon": "fas fa-file-alt",
+          "href": "https://doi.org/10.1016/j.autcon.2026.106994"
+        },
+        {
+          "label": "View on GitHub",
+          "icon": "fab fa-github",
+          "href": "https://github.com/isaddiq/BIMUniXchange"
+        },
+        {
+          "label": "Sponsor",
+          "icon": "fas fa-heart",
+          "href": "https://github.com/sponsors/isaddiq",
+          "variant": "sponsor-link"
+        },
+        {
+          "label": "Buy Me a Coffee",
+          "icon": "fas fa-mug-hot",
+          "href": "https://buymeacoffee.com/saddiqr97z",
+          "variant": "coffee-link"
+        }
+      ],
+      "sections": [
+        {
+          "type": "info",
+          "title": "AEC-to-XR Pipeline",
+          "paragraphs": [
+            "BIMUniXchange is a full AEC-to-XR workflow suite that enables seamless transfer of BIM models from Autodesk Revit and GRAPHISOFT ArchiCAD into Unity for immersive extended reality applications. The suite consists of <strong>ReUniXchange</strong> (Revit plugin), <strong>ArchUniXchange</strong> (ArchiCAD Python scripts), and the <strong>BIMUniXchange Unity package</strong> for automated metadata mapping and hierarchical BIM structure reconstruction inside Unity.",
+            "The pipeline has been tested with 4,000+ building elements, maintaining interactive frame rates in XR on platforms including Meta Quest 3, Samsung S22 Ultra, and desktop VR headsets."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Key Features",
+          "items": [
+            {
+              "icon": "fas fa-cog",
+              "html": "Multi-CAD support: Revit 2024/2025/2026 &amp; ArchiCAD"
+            },
+            {
+              "icon": "fas fa-database",
+              "html": "Full metadata preservation (CSV + XML)"
+            },
+            {
+              "icon": "fas fa-paint-brush",
+              "html": "Material and texture export to Unity"
+            },
+            {
+              "icon": "fas fa-sitemap",
+              "html": "Automated BIM hierarchy reconstruction in Unity"
+            },
+            {
+              "icon": "fas fa-vr-cardboard",
+              "html": "Cross-platform XR deployment (Quest, Mobile, Desktop)"
+            },
+            {
+              "icon": "fas fa-film",
+              "html": "4D construction sequence simulation"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-vr-cardboard",
+              "title": "Platform Capabilities",
+              "subtitle": "BIM-to-XR Immersive Workflow",
+              "duration": "Revit · ArchiCAD · Unity · OpenXR",
+              "capabilities": [
+                {
+                  "icon": "fas fa-exchange-alt",
+                  "label": "BIM Data Exchange"
+                },
+                {
+                  "icon": "fas fa-layer-group",
+                  "label": "IFC Hierarchy"
+                },
+                {
+                  "icon": "fas fa-glasses",
+                  "label": "XR Deployment"
+                },
+                {
+                  "icon": "fas fa-film",
+                  "label": "4D Simulation"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "media",
+          "title": "BIMUniXchange Preview",
+          "media": "image",
+          "autoWrap": true,
+          "src": "assets/images/software/bimunixchange-aec-to-xr-pipeline.png",
+          "alt": "BIMUniXchange AEC-to-XR Pipeline",
+          "imageClass": "media-image-contain"
+        }
+      ]
+    },
+    {
+      "id": "bim-vr-4d-simulation",
+      "navLabel": "BIM-VR 4D",
+      "navIcon": "fas fa-vr-cardboard",
+      "title": "BIM-VR for 4D Simulation",
+      "description": "Interactive 4D BIM-VR prototype for modular building manufacturing, synchronizing Revit BIM geometry, semantic metadata, and schedule data inside Unity/OpenXR.",
+      "previewImage": "assets/images/covers/software-cover.webp",
+      "badges": [
+        {
+          "label": "4D BIM",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Virtual Reality",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Modular Construction",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Autodesk Revit",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Unity",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "OpenXR",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "Meta Quest 2",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [],
+      "sections": [
+        {
+          "type": "info",
+          "title": "Interactive Modular Manufacturing Simulation",
+          "paragraphs": [
+            "BIM-VR for 4D Simulation is a Unity-based prototype for visualizing modular building manufacturing in an immersive virtual environment. The workflow begins with detailed Autodesk Revit BIM models of a modular house, factory environment, and supporting equipment, then exports geometry and metadata through the custom ReUniXchange pipeline.",
+            "Inside Unity, OBJ geometry, BIM metadata CSV files, and construction schedule CSV data are mapped to BIM components. The resulting scene supports phase-based animation, real-time schedule control, semantic metadata inspection, desktop navigation, and OpenXR-compatible VR deployment."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Core Capabilities",
+          "items": [
+            {
+              "icon": "fas fa-cube",
+              "html": "Revit BIM and factory models exported as OBJ geometry with metadata-rich CSV files"
+            },
+            {
+              "icon": "fas fa-database",
+              "html": "C# metadata mapping from CSV records to corresponding Unity GameObjects"
+            },
+            {
+              "icon": "fas fa-calendar-alt",
+              "html": "Construction schedule CSV integration for task duration, sequence, dependencies, labor, and equipment"
+            },
+            {
+              "icon": "fas fa-film",
+              "html": "Timeline-based 4D animation of component visibility, position, and material states"
+            },
+            {
+              "icon": "fas fa-sliders-h",
+              "html": "Simulation controls for play, pause, phase navigation, schedule display, and progress tracking"
+            },
+            {
+              "icon": "fas fa-vr-cardboard",
+              "html": "OpenXR VR interaction with teleportation, ray casting, floating UI panels, and metadata inspection"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-vr-cardboard",
+              "title": "Platform Capabilities",
+              "subtitle": "Modular Manufacturing Digital Twin",
+              "duration": "Revit - Unity - OpenXR - Meta Quest 2",
+              "capabilities": [
+                {
+                  "icon": "fas fa-clock",
+                  "label": "4D Sequencing"
+                },
+                {
+                  "icon": "fas fa-search",
+                  "label": "Metadata Inspection"
+                },
+                {
+                  "icon": "fas fa-industry",
+                  "label": "Factory Workflow"
+                },
+                {
+                  "icon": "fas fa-headset",
+                  "label": "Immersive VR"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "media",
+          "title": "BIM-VR 4D Simulation Demo",
+          "media": "video",
+          "src": "https://www.youtube.com/embed/KIq9kNzj4Qk",
+          "iframeTitle": "BIM-VR 4D Simulation Demo"
+        }
+      ]
+    },
+    {
+      "id": "bim-mr-modular-construction",
+      "navLabel": "BIM-MR",
+      "navIcon": "fas fa-glasses",
+      "title": "BIM-MR for Modular Construction",
+      "description": "Mixed reality inspection system for factory-built modular units, linking discipline-layered BIM geometry and semantic metadata with real-time Unity/XR interaction.",
+      "previewImage": "assets/images/covers/software-cover.webp",
+      "badges": [
+        {
+          "label": "BIM-MR",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Mixed Reality",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Modular Construction",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Factory Inspection",
+          "variant": "corresponding"
+        },
+        {
+          "label": "ArchiCAD",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "Unity",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "Meta Quest 3",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [],
+      "sections": [
+        {
+          "type": "info",
+          "title": "MR Inspection for Factory-Built Modules",
+          "paragraphs": [
+            "BIM-MR for Modular Construction is a Unity-based mixed reality inspection system for factory-built modular units. The workflow transfers discipline-layered BIM data from ArchiCAD into Unity, preserving modular unit geometry, element identifiers, and semantic metadata for inspection on the factory floor.",
+            "The system lets inspectors project architectural, structural, MEP, and connection hardware layers into an MR environment, toggle discipline visibility, inspect component metadata, manipulate modules, and compare digital design intent with partially completed physical modular units."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Core Capabilities",
+          "items": [
+            {
+              "icon": "fas fa-building",
+              "html": "DfMA-based modular BIM model with 3,797 building elements across architectural, structural, MEP, and connection disciplines"
+            },
+            {
+              "icon": "fas fa-fingerprint",
+              "html": "Python-based unique element ID assignment for repeated modular components"
+            },
+            {
+              "icon": "fas fa-file-export",
+              "html": "FBX geometry export with structured CSV metadata for element-level semantic mapping"
+            },
+            {
+              "icon": "fas fa-database",
+              "html": "C# metadata matching between Unity GameObject names and CSV Element_ID records"
+            },
+            {
+              "icon": "fas fa-layer-group",
+              "html": "Layer-based filtering for architectural, structural, MEP, and sub-component inspection"
+            },
+            {
+              "icon": "fas fa-arrows-alt",
+              "html": "MR transform controls for spawning, translating, rotating, scaling, and saving module states"
+            },
+            {
+              "icon": "fas fa-search-location",
+              "html": "Factory-floor inspection support for deviation checking, metadata display, and component completeness review"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-glasses",
+              "title": "Platform Capabilities",
+              "subtitle": "BIM to Mixed Reality Inspection Workflow",
+              "duration": "ArchiCAD - Python - Unity - XR Interaction Toolkit - Meta Quest 3",
+              "capabilities": [
+                {
+                  "icon": "fas fa-layer-group",
+                  "label": "Discipline Layers"
+                },
+                {
+                  "icon": "fas fa-ruler-combined",
+                  "label": "Spatial Inspection"
+                },
+                {
+                  "icon": "fas fa-database",
+                  "label": "Semantic Metadata"
+                },
+                {
+                  "icon": "fas fa-industry",
+                  "label": "Factory Deployment"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "media",
+          "title": "BIM-MR Modular Construction Demo",
+          "media": "video",
+          "src": "https://www.youtube.com/embed/-vKk2hvBr80",
+          "iframeTitle": "BIM-MR Modular Construction Demo"
+        }
+      ]
+    },
+    {
+      "id": "ifcexplorer",
+      "navLabel": "IFC Static Web Viewer",
+      "navIcon": "fas fa-cube",
+      "title": "IFC Static Web Viewer",
+      "description": "A browser-based, zero-install, WebXR-ready IFC building model viewer built on A-Frame and web-ifc-three. Supports IFC2X3, IFC4, and IFC4X3.",
+      "previewImage": "assets/images/software/ifc-explorer-web-viewer-screenshot.jpg",
+      "badges": [
+        {
+          "label": "IFC2X3",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "IFC4",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "IFC4X3",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "WebXR",
+          "variant": "corresponding"
+        },
+        {
+          "label": "A-Frame",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Three.js",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "MIT License",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [
+        {
+          "label": "Try it Now",
+          "icon": "fas fa-external-link-alt",
+          "href": "https://isaddiq.github.io/IFC_Web_Viewer/"
+        },
+        {
+          "label": "View on GitHub",
+          "icon": "fab fa-github",
+          "href": "https://github.com/isaddiq/IFC_Web_Viewer"
+        },
+        {
+          "label": "Sponsor",
+          "icon": "fas fa-heart",
+          "href": "https://github.com/sponsors/isaddiq",
+          "variant": "sponsor-link"
+        },
+        {
+          "label": "Buy Me a Coffee",
+          "icon": "fas fa-mug-hot",
+          "href": "https://buymeacoffee.com/saddiqr97z",
+          "variant": "coffee-link"
+        }
+      ],
+      "sections": [
+        {
+          "type": "info",
+          "title": "Browser-Based IFC Viewer",
+          "paragraphs": [
+            "IFCExplorer is a lightweight, zero-install web application that lets architects, engineers, and construction professionals open and explore IFC building models directly in the browser, no plugins required. Models can be inspected in classic 3D orbit mode, walked through in first-person, or experienced in immersive VR via WebXR on compatible headsets such as Meta Quest.",
+            "Built on A-Frame 1.4.1 with the web-ifc WASM geometry parser, IFCExplorer supports full IFC schema hierarchies, element inspection, property sets, floor navigation, and visibility control for slabs, MEP systems, and structural beams."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Core Features",
+          "items": [
+            {
+              "icon": "fas fa-folder-open",
+              "html": "Open local IFC files: no upload required"
+            },
+            {
+              "icon": "fas fa-eye",
+              "html": "3D orbit viewer with animated camera transitions &amp; View Cube"
+            },
+            {
+              "icon": "fas fa-walking",
+              "html": "First-person walker with WASD controls and floor elevation display"
+            },
+            {
+              "icon": "fas fa-building",
+              "html": "Automatic floor/storey detection with instant teleport"
+            },
+            {
+              "icon": "fas fa-mouse-pointer",
+              "html": "Click-to-inspect: element highlight, IFC property sets panel"
+            },
+            {
+              "icon": "fas fa-sitemap",
+              "html": "Full IFC schema tree (Project → Site → Building → Storey → Elements)"
+            },
+            {
+              "icon": "fas fa-vr-cardboard",
+              "html": "Immersive WebXR/VR mode with 6DOF controller support"
+            },
+            {
+              "icon": "fas fa-file-pdf",
+              "html": "jsPDF report export &amp; annotation/memo system"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-cube",
+              "title": "Technology Stack",
+              "subtitle": "A-Frame · web-ifc · Three.js · jsPDF",
+              "duration": "Runs entirely in the browser, zero install",
+              "capabilities": [
+                {
+                  "icon": "fas fa-search",
+                  "label": "Element Inspection"
+                },
+                {
+                  "icon": "fas fa-layer-group",
+                  "label": "Floor Navigation"
+                },
+                {
+                  "icon": "fas fa-vr-cardboard",
+                  "label": "WebXR / VR"
+                },
+                {
+                  "icon": "fas fa-file-pdf",
+                  "label": "PDF Export"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "media",
+          "title": "IFC Web Viewer Preview",
+          "media": "image",
+          "autoWrap": true,
+          "src": "assets/images/software/ifc-explorer-web-viewer-screenshot.jpg",
+          "alt": "IFCExplorer Web Viewer Screenshot",
+          "imageClass": "media-image-contain"
+        }
+      ]
+    },
+    {
+      "id": "ifc2unity",
+      "navLabel": "Ifc2Unity",
+      "navIcon": "fas fa-file-import",
+      "title": "Ifc2Unity",
+      "description": "A Unity Editor tool that converts IFC files directly into Unity scenes using IfcOpenShell (Python), preserving geometry, materials, metadata, and the full BIM spatial hierarchy.",
+      "previewImage": "assets/images/software/ifc2unity-editor-preview.jpg",
+      "badges": [
+        {
+          "label": "IFC",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "Unity",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "IfcOpenShell",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Python",
+          "variant": "corresponding"
+        },
+        {
+          "label": "BIM Hierarchy",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "MIT License",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [
+        {
+          "label": "View on GitHub",
+          "icon": "fab fa-github",
+          "href": "https://github.com/isaddiq/Ifc2Unity"
+        },
+        {
+          "label": "Sponsor",
+          "icon": "fas fa-heart",
+          "href": "https://github.com/sponsors/isaddiq",
+          "variant": "sponsor-link"
+        },
+        {
+          "label": "Buy Me a Coffee",
+          "icon": "fas fa-mug-hot",
+          "href": "https://buymeacoffee.com/saddiqr97z",
+          "variant": "coffee-link"
+        }
+      ],
+      "sections": [
+        {
+          "type": "info",
+          "title": "IFC to Unity Importer",
+          "paragraphs": [
+            "Ifc2Unity is a Unity Editor extension (part of the BIMUniXchange toolkit) that converts IFC building models into fully structured Unity scenes. It uses IfcOpenShell (Python) to parse IFC geometry and export OBJ/MTL/CSV files, which are then loaded by the Unity-side C# pipeline to build a complete Site → Building → Storey → Elements GameObject hierarchy with metadata, materials, and optional mesh colliders."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "Import Options",
+          "items": [
+            {
+              "icon": "fas fa-sitemap",
+              "html": "Create IFC Hierarchy: Site → Building → Storey → Elements"
+            },
+            {
+              "icon": "fas fa-database",
+              "html": "Assign Metadata: all IFC properties as Unity components"
+            },
+            {
+              "icon": "fas fa-paint-brush",
+              "html": "Apply Colors: IFC material colors to Unity materials"
+            },
+            {
+              "icon": "fas fa-cubes",
+              "html": "Create Mesh Colliders per imported element"
+            },
+            {
+              "icon": "fas fa-layer-group",
+              "html": "Group by Storey and/or IFC Class"
+            },
+            {
+              "icon": "fas fa-compress-arrows-alt",
+              "html": "Optimize Meshes: weld vertices and optimize indices"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-file-import",
+              "title": "Prerequisites",
+              "subtitle": "Unity 2020.3 LTS · Python 3.8+ · IfcOpenShell",
+              "duration": "Part of the BIMUniXchange toolkit",
+              "capabilities": [
+                {
+                  "icon": "fas fa-code",
+                  "label": "OBJ / MTL Export"
+                },
+                {
+                  "icon": "fas fa-database",
+                  "label": "CSV Metadata"
+                },
+                {
+                  "icon": "fas fa-sitemap",
+                  "label": "BIM Hierarchy"
+                },
+                {
+                  "icon": "fas fa-chart-bar",
+                  "label": "Performance Logs"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "media",
+          "title": "Ifc2Unity Editor Window",
+          "media": "image",
+          "autoWrap": true,
+          "src": "assets/images/software/ifc2unity-editor-preview.jpg",
+          "alt": "Ifc2Unity Unity Editor Window",
+          "imageClass": "media-image-contain"
+        }
+      ]
+    },
+    {
+      "id": "ifcusd",
+      "navLabel": "IfcUSD",
+      "navIcon": "fas fa-shapes",
+      "title": "IfcUSD",
+      "description": "A Python converter that turns IFC building models into OpenUSD files, preserving IFC identity, hierarchy, materials, properties, quantities, and relationship metadata for BIM-to-USD interchange.",
+      "previewImage": "assets/images/software/ifcusd-converter-preview.png",
+      "badges": [
+        {
+          "label": "IFC",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "OpenUSD",
+          "variant": "impact-factor"
+        },
+        {
+          "label": "IfcOpenShell",
+          "variant": "corresponding"
+        },
+        {
+          "label": "Python 3.10+",
+          "variant": "corresponding"
+        },
+        {
+          "label": "CLI",
+          "variant": "editor-choice"
+        },
+        {
+          "label": "MIT License",
+          "variant": "editor-choice"
+        }
+      ],
+      "actions": [
+        {
+          "label": "View on GitHub",
+          "icon": "fab fa-github",
+          "href": "https://github.com/isaddiq/ifcusd"
+        },
+        {
+          "label": "Sponsor",
+          "icon": "fas fa-heart",
+          "href": "https://github.com/sponsors/isaddiq",
+          "variant": "sponsor-link"
+        },
+        {
+          "label": "Buy Me a Coffee",
+          "icon": "fas fa-mug-hot",
+          "href": "https://buymeacoffee.com/saddiqr97z",
+          "variant": "coffee-link"
+        }
+      ],
+      "sections": [
+        {
+          "type": "info",
+          "title": "IFC to OpenUSD Converter",
+          "paragraphs": [
+            "IfcUSD bridges BIM and USD-based DCC pipelines by converting IFC building models into Pixar's OpenUSD format. It uses IfcOpenShell to read and tessellate IFC geometry, then writes <code>.usd</code>, <code>.usda</code>, or <code>.usdc</code> files through the OpenUSD Python bindings. The converter writes tessellated meshes as <code>UsdGeom.Mesh</code> prims while preserving the full IFC spatial hierarchy as USD <code>Xform</code> prims under <code>/IFC</code>.",
+            "The workflow is geometry-first but metadata-rich: IFC identity (STEP id, GlobalId, class, name, tag, predefined type), property sets, quantity takeoffs, USD Preview Surface materials with diffuse/specular/opacity, face subsets, external texture references, unit assignments, and relationship metadata (spatial containers, aggregate parents, types, groups, layers, openings, and references) are all carried into the USD stage so downstream tools retain the full BIM context."
+          ]
+        },
+        {
+          "type": "features",
+          "title": "What Gets Written",
+          "items": [
+            {
+              "icon": "fas fa-shapes",
+              "html": "Tessellated IFC products as <code>UsdGeom.Mesh</code> prims"
+            },
+            {
+              "icon": "fas fa-sitemap",
+              "html": "IFC spatial hierarchy as USD <code>Xform</code> prims under <code>/IFC</code>"
+            },
+            {
+              "icon": "fas fa-paint-brush",
+              "html": "USD Preview Surface materials, colors, opacity, and face subsets"
+            },
+            {
+              "icon": "fas fa-image",
+              "html": "External texture references from IFC surface-style data"
+            },
+            {
+              "icon": "fas fa-database",
+              "html": "IFC property sets and quantity takeoffs as USD attributes"
+            },
+            {
+              "icon": "fas fa-project-diagram",
+              "html": "Spatial containers, aggregates, types, groups, layers, openings"
+            },
+            {
+              "icon": "fas fa-ruler-combined",
+              "html": "USD stage unit metadata from the IFC unit assignment"
+            }
+          ]
+        },
+        {
+          "type": "featureGrid",
+          "cards": [
+            {
+              "icon": "fas fa-shapes",
+              "title": "Command Line Usage",
+              "subtitle": "ifcusd convert INPUT.ifc OUTPUT.usd [options]",
+              "duration": "Supports .usd, .usda (ASCII), and .usdc (binary crate)",
+              "capabilities": [
+                {
+                  "icon": "fas fa-filter",
+                  "label": "Include / Exclude by IFC class"
+                },
+                {
+                  "icon": "fas fa-microchip",
+                  "label": "Multi-threaded tessellation"
+                },
+                {
+                  "icon": "fas fa-compass",
+                  "label": "Y-up or Z-up stages"
+                },
+                {
+                  "icon": "fas fa-cogs",
+                  "label": "Auto dependency install"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "title": "Quick Install",
+          "paragraphs": [
+            "Install directly from GitHub with pip:"
+          ],
+          "code": "python -m pip install \"git+https://github.com/isaddiq/ifcusd.git\"\nifcusd convert ./model.ifc ./model.usd --threads 4 --verbose"
+        },
+        {
+          "type": "media",
+          "title": "IfcUSD Preview",
+          "media": "image",
+          "autoWrap": true,
+          "src": "assets/images/software/ifcusd-converter-preview.png",
+          "alt": "IfcUSD IFC to OpenUSD converter preview",
+          "imageClass": "media-image-contain"
+        }
+      ]
+    }
+  ]
+}

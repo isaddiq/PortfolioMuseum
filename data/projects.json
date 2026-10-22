@@ -1,0 +1,251 @@
+{
+  "research_projects": [
+    {
+      "id": "project_001",
+      "title": "Development of Core Technologies for Robot-Friendly Building Design, Construction, Operation & Management",
+      "duration": "Apr. 2025 – Oct. 2026",
+      "role": "Researcher (BIM–robot integration work-package)",
+      "status": "Ongoing",
+      "funding_source": "Smart+ Building, MOLIT",
+      "icon": "fas fa-robot",
+      "image": "assets/images/projects/robot-friendly-building-design-project.webp",
+      "description": "The project marks the first phase of the national Smart+ Building R&D plan, targeting service-robot operation inside healthcare and terminal environments. BIM pipelines feed Unity and ROS simulations, enabling early collision-avoidance and path-planning tests before on-site deployment.",
+      "objectives": [
+        "Publish robot-friendly spatial & component design standards",
+        "Build a multi-robot orchestration and indoor positioning platform",
+        "Run full-scale pilot tests at Gangdong Kyung Hee University Hospital and other facilities"
+      ],
+      "technologies": [
+        "BIM",
+        "Unity",
+        "ROS",
+        "Digital Twin",
+        "Indoor Positioning Systems",
+        "Multi-robot Orchestration"
+      ],
+      "supervisor": "Professor Inhan Kim"
+    },
+    {
+      "id": "project_004",
+      "title": "BIM-Based Customer-Friendly AI Automated Cost Estimation System for Industrialized Construction",
+      "duration": "Mar 2025 – Feb 2026",
+      "role": "Researcher (BIM-XR Integration)",
+      "status": "Completed",
+      "funding_source": "Korean Research Foundation (IRIS Mid-Career Research)",
+      "icon": "fas fa-calculator",
+      "image": "assets/images/projects/bim-ai-cost-estimation-project.webp",
+      "description": "This project focuses on developing an AI-powered cost estimation system that integrates with BIM workflows to provide accurate and customer-friendly cost estimates for modular and industrialized construction projects. The system aims to achieve ±3% estimation accuracy and reduce construction cost errors by up to 20%.",
+      "objectives": [
+        "BIM 5D quantity automatic extraction",
+        "AI-based unit price and labor cost learning",
+        "Achieve ±3% estimation accuracy",
+        "Modular prefab process KPI integration"
+      ],
+      "technologies": [
+        "BIM 5D",
+        "ArchiCAD API",
+        "Python",
+        "Pandas",
+        "XR",
+        "Game Engine"
+      ],
+      "supervisor": "Professor Inhan Kim"
+    },
+    {
+      "id": "project_002",
+      "title": "AI-Based Automated Architectural Design Technology Development",
+      "duration": "Apr 2021 – Dec 2025",
+      "role": "Researcher (NLP model tuning & BIM database engineering)",
+      "status": "Completed",
+      "funding_source": "National Land Infrastructure & Transport Technology Programme",
+      "icon": "fas fa-brain",
+      "image": "assets/images/projects/ai-architectural-design-project.webp",
+      "description": "The consortium is integrating AI with BIM to shorten the concept-design cycle. Maintaining the MongoDB-backed design corpus and fine-tuning transformer models that map client intents to spatial constraints, pushing text-to-BIM workflows toward commercial readiness. Project completed across 5 phases (2021-2025).",
+      "objectives": [
+        "Convert free-text client briefs to BIM-ready design options using BERT-based NLP and generative models",
+        "Automate design-performance evaluation and option ranking"
+      ],
+      "technologies": [
+        "BERT-based NLP",
+        "Generative Models",
+        "BIM",
+        "MongoDB",
+        "Transformer Models",
+        "Revit Plugin",
+        "Cloud Computing"
+      ],
+      "supervisor": "Professor Inhan Kim"
+    },
+    {
+      "id": "project_003",
+      "title": "Open BIM-Based Automated Code Compliance Checking Technology & Applications",
+      "duration": "Mar 2021 – Dec 2021",
+      "role": "Researcher (rule authoring & test-case development)",
+      "status": "Completed",
+      "funding_source": "MOLIT open-BIM programme",
+      "icon": "fas fa-check-circle",
+      "image": "assets/images/projects/open-bim-code-compliance-project.webp",
+      "description": "This completed project established Korea's first open-BIM rule-checking workflow. Contributions centered on mapping IFC entities to rule parameters and building regression test suites that now serve as benchmarks for the newer Smart+ Building regulatory modules.",
+      "objectives": [
+        "Translate Korean Building Code clauses into executable IFC logic rules",
+        "Develop KBim Assess-Lite model checker and KBim D-Generator for automatic 2D permit drawings"
+      ],
+      "technologies": [
+        "Open BIM",
+        "IFC",
+        "Korean Building Code",
+        "Rule Checking",
+        "Model Checking",
+        "Automated Drawing Generation"
+      ],
+      "supervisor": "Professor Inhan Kim"
+    },
+    {
+      "id": "project_005",
+      "title": "Energy and Form: Environmental Data-Driven Form-Finding Optimization",
+      "duration": "2024 Spring, Special Studies in Computational Design in Architecture 1 Course Project",
+      "role": "Researcher / Computational Design Developer",
+      "status": "Completed",
+      "funding_source": "Academic Research Project",
+      "icon": "fas fa-sun",
+      "image": "assets/images/projects/energy-form-project.png",
+      "description": "This project developed an environmental data-driven form-finding workflow for urban housing design. The work addressed the conflict between daylight access, excessive direct solar exposure, residential comfort, and energy performance. Using parametric modelling, daylight simulation, and direct sun-hour analysis, multiple massing and facade options were tested before finalizing the architectural form. The optimized massing was then used to guide facade articulation, spatial planning, and residential layout decisions.",
+      "problem": [
+        "Urban housing often suffers from poor daylight quality and excessive solar exposure, reducing indoor comfort and increasing cooling energy demand.",
+        "Conventional housing design workflows rarely balance daylight penetration with reduced direct sun hours in a systematic way.",
+        "Massing, facade, and floor plan decisions are often made without consistent environmental simulation feedback.",
+        "Design decisions made at early stages can lock in poor daylight, overheating, and energy-performance outcomes."
+      ],
+      "objectives": [
+        "Optimize building massing using daylight and direct sun-hour simulations.",
+        "Use Grasshopper and Ladybug-based environmental analysis to test alternative design options.",
+        "Reduce excessive direct sun exposure while maintaining useful daylight access.",
+        "Use the optimized massing output to guide facade design and floor plan layout.",
+        "Create a repeatable workflow that links environmental performance data with architectural decision-making."
+      ],
+      "methodology": [
+        "Defined the design motivation and environmental performance problem.",
+        "Built parametric massing alternatives using computational design tools.",
+        "Ran daylight, solar exposure, and direct sun-hour simulations on alternative forms.",
+        "Compared design options using acceptable, supplemental, failing, and excessive exposure categories.",
+        "Refined the selected form through iterative simulation cycles.",
+        "Applied simulation findings to facade development, unit layout, and final architectural visualization."
+      ],
+      "workflow_stages": [
+        {
+          "stage": "1. Design Motivation and Problem Definition",
+          "description": "Identified environmental limitations in dense urban housing, including poor daylight distribution and excessive solar exposure."
+        },
+        {
+          "stage": "2. Parametric Design",
+          "description": "Generated and tested alternative massing options using parametric modelling and environmental simulation."
+        },
+        {
+          "stage": "3. Final Design",
+          "description": "Translated the optimized environmental results into building massing, facade articulation, daylight-informed floor plans, and final visualization outputs."
+        }
+      ],
+      "contribution": [
+        "Introduced a solar-informed massing workflow that connects performance simulation with early-stage housing design decisions.",
+        "Established iterative simulation cycles for refining and validating daylight and solar exposure outcomes.",
+        "Provided a method to improve natural light use while controlling direct sun exposure in residential buildings.",
+        "Demonstrated how environmental data can guide massing, facade, and plan development rather than being used only as a post-design evaluation tool."
+      ],
+      "technologies": [
+        "Grasshopper",
+        "Ladybug",
+        "Rhino",
+        "Parametric Modelling",
+        "Daylight Simulation",
+        "Direct Sun-Hour Analysis",
+        "Environmental Performance Analysis",
+        "Solar Exposure Mapping",
+        "Architectural Visualization"
+      ],
+      "outputs": [
+        "Parametric massing alternatives",
+        "Daylight and direct sun-hour simulation results",
+        "Solar exposure classification diagrams",
+        "Optimized building massing",
+        "Facade and floor plan design guidance",
+        "Final architectural renderings and performance visualizations"
+      ],
+      "supervisor": "Professor Dongil Kim"
+    },
+    {
+      "id": "project_006",
+      "title": "Bending Active Structures",
+      "duration": "2023 Fall, Design Methodology and Application 3 Course Project",
+      "role": "Researcher / Parametric Design and Fabrication Developer",
+      "status": "Completed",
+      "funding_source": "Academic Research Project",
+      "icon": "fas fa-project-diagram",
+      "image": "assets/images/projects/bending-active-structure-project.png",
+      "description": "This project explored bending-active structural systems as a computational design and fabrication workflow. The project investigated how flexible components can generate spatial, structural, and architectural effects through controlled bending behavior. A generative process was developed from concept design to parametric modelling, structural logic, fabrication drawings, physical prototyping, and installation. The work reframed parametric design as a decision-making system where geometric constraints, fabrication limits, and ecological considerations guide the final architectural output.",
+      "problem": [
+        "Designing bending-active structures is complex because geometric behavior, structural constraints, fabrication limits, and material performance must be managed together.",
+        "Digital tools are often used mainly for visual representation rather than decision-making and fabrication control.",
+        "Parametric design workflows can ignore construction feasibility, material behavior, and environmental limits.",
+        "A lack of traceable links between design intent, computational rules, and fabrication outputs can weaken buildability."
+      ],
+      "objectives": [
+        "Build a generative design process linking concept design to construction decisions.",
+        "Use computation to test form, space, structure, and ecological performance.",
+        "Integrate digital fabrication constraints so outputs remain feasible and traceable.",
+        "Develop a workflow that converts bending-active geometry into producible fabrication data.",
+        "Validate the computational model through physical fabrication and installation."
+      ],
+      "methodology": [
+        "Developed the conceptual logic for bending-active architectural components.",
+        "Created parametric models to control geometry, spacing, bending behavior, and module repetition.",
+        "Studied support conditions, loading direction, deformation behavior, and dimensional constraints.",
+        "Generated fabrication-ready component layouts and assembly information.",
+        "Produced physical prototypes to test bending behavior and constructability.",
+        "Installed the fabricated system and compared physical outcomes with digital expectations."
+      ],
+      "workflow_stages": [
+        {
+          "stage": "1. Concept and Motivation",
+          "description": "Explored bending-active forms and architectural patterns as a structural and spatial design strategy."
+        },
+        {
+          "stage": "2. Parametric Modelling",
+          "description": "Built computational models to define component geometry, support conditions, bending constraints, dimensions, and fabrication layout."
+        },
+        {
+          "stage": "3. Fabrication and Installation",
+          "description": "Converted parametric outputs into fabrication data, produced physical components, assembled the system, and validated the design through installation."
+        }
+      ],
+      "contribution": [
+        "Reframed architects as system-makers who connect conceptual strategy, parametric logic, structural behavior, and fabrication workflow.",
+        "Delivered a pipeline from generative design to constructible production data.",
+        "Demonstrated how constraints can guide and validate parametric design instead of limiting creativity.",
+        "Connected computational modelling, fabrication drawings, physical prototyping, and installation into one traceable workflow."
+      ],
+      "technologies": [
+        "Parametric Modelling",
+        "Grasshopper",
+        "Rhino",
+        "Computational Design",
+        "Generative Design",
+        "Digital Fabrication",
+        "Bending-Active Structures",
+        "Structural Form-Finding",
+        "Fabrication Drawing",
+        "Physical Prototyping"
+      ],
+      "outputs": [
+        "Bending-active concept studies",
+        "Parametric component model",
+        "Structural and dimensional constraint studies",
+        "Fabrication drawings",
+        "Physical prototypes",
+        "Installed bending-active architectural system"
+      ],
+      "supervisor": "Professor Dongil Kim"
+    }
+  ],
+  "collaboration_projects": [],
+  "student_projects": []
+}

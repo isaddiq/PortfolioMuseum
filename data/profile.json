@@ -1,0 +1,177 @@
+{
+  "name": "Saddiq Ur Rehman",
+  "title": "Researcher, buildingSMART Korea",
+  "tagline": "Construction informatics · BIM · XR · AI · Digital twins · Construction automation",
+  "portraits": [
+    {
+      "src": "assets/images/profile/Profile_2.jpg",
+      "alt": "Saddiq Ur Rehman"
+    },
+    {
+      "src": "assets/images/profile/Profile_3.jpg",
+      "alt": "Saddiq Ur Rehman"
+    },
+    {
+      "src": "assets/images/profile/Profile_1.png",
+      "alt": "Saddiq Ur Rehman"
+    }
+  ],
+  "about": [
+    "I am a researcher at buildingSMART Korea, where I work on the Human and Robot collaboration for using elevators in hospital buildings. I received my PhD in Architecture from the Department of Architecture at Kyung Hee University, South Korea in August 2026, and was awarded the Graduate School’s Best Academic Award for the Department of Architecture. I hold a Bachelor’s degree in Civil Engineering from the University of Engineering and Technology, Peshawar, Pakistan.",
+    "My research lies at the intersection of construction informatics, Building Information Modeling (BIM), extended reality, AI, digital twins, and construction automation. I develop semantic and interoperable workflows that connect BIM with game engines, immersive interfaces, robotic systems, and real-time decision-support tools for modular and industrialised construction.",
+    "My selected work includes BIM-to-Unity semantic data exchange, Ifc2Unity and IFCExplorer, ReUniXchange, BIM-linked mixed reality inspection and reporting, conversational LLM interfaces for BIM querying, 4D BIM simulation, and digital-twin workflows for immersive AEC applications."
+  ],
+  "researchInterests": [
+    {
+      "title": "Building Information Modeling (BIM)",
+      "description": "Semantic model data and open standards such as IFC",
+      "icon": "fas fa-cube",
+      "image": "assets/images/Keywords/bim.webp",
+      "topic": "BIM & Interoperability",
+      "accent": "#2563eb"
+    },
+    {
+      "title": "Construction Informatics",
+      "description": "Data-driven methods supporting decisions across the project lifecycle",
+      "icon": "fas fa-chart-column",
+      "image": "assets/images/Keywords/informatics.webp",
+      "topic": "",
+      "accent": "#0891b2"
+    },
+    {
+      "title": "Extended Reality (XR)",
+      "description": "Immersive VR and mixed reality for design review and site inspection",
+      "icon": "fas fa-vr-cardboard",
+      "image": "assets/images/Keywords/xr.webp",
+      "topic": "XR & Game Engines",
+      "accent": "#7c3aed"
+    },
+    {
+      "title": "Construction Robotics",
+      "description": "Building models linked to robotic fabrication and on-site operations",
+      "icon": "fas fa-robot",
+      "image": "assets/images/Keywords/robotics.webp",
+      "room": "projects",
+      "accent": "#059669"
+    },
+    {
+      "title": "Design for Manufacturing and Assembly (DfMA)",
+      "description": "Modular, off-site production workflows for building delivery",
+      "icon": "fas fa-industry",
+      "image": "assets/images/Keywords/dfma.webp",
+      "topic": "Modular & DfMA",
+      "accent": "#ea580c"
+    },
+    {
+      "title": "AI for Construction",
+      "description": "Language and multimodal interfaces for querying building data",
+      "icon": "fas fa-brain",
+      "image": "assets/images/Keywords/ai.webp",
+      "topic": "AI & NLP",
+      "accent": "#0d9488"
+    },
+    {
+      "title": "Digital Twin",
+      "description": "Schedule and sensor streams linked to live building models",
+      "icon": "fas fa-clone",
+      "image": "assets/images/Keywords/twin.webp",
+      "topic": "4D Simulation & Digital Twins",
+      "accent": "#d97706"
+    },
+    {
+      "title": "BIM Data Interoperability",
+      "description": "Semantic mappings that preserve meaning between platforms",
+      "icon": "fas fa-exchange-alt",
+      "image": "assets/images/Keywords/interop.webp",
+      "topic": "BIM & Interoperability",
+      "accent": "#db2777"
+    }
+  ],
+  "education": [
+    {
+      "id": "edu_khu",
+      "degree": "Integrated M.S-Ph.D in Architecture",
+      "institution": "Kyung Hee University, Global Campus, Korea",
+      "website": "https://www.khu.ac.kr",
+      "logo": "assets/logos/organizations/kyung-hee-university-logo.png",
+      "duration": "March 2021 - August 2026",
+      "gpa": "4.15/4.3",
+      "advisor": "Professor Inhan Kim",
+      "advisorUrl": "https://khu.elsevierpure.com/en/persons/inhan-kim/",
+      "thesis": "A Semantically Enriched BIM to XR data exchange Framework with Conversational LLM for Immersive Construction Informatics",
+      "award": "Best Academic Award (최우수학술상), Graduate School of Kyung Hee University, Department of Architecture, 2026"
+    },
+    {
+      "id": "edu_uet",
+      "degree": "B.Sc. in Civil Engineering",
+      "institution": "University of Engineering and Technology, Peshawar",
+      "website": "https://www.uetpeshawar.edu.pk",
+      "logo": "assets/logos/organizations/uet-peshawar-logo.png",
+      "duration": "September 2015 - September 2019",
+      "gpa": "3.39/4.0",
+      "advisor": "Professor Irshad Khan",
+      "thesis": "Experimental Determination of Capacity of Pile Group and Pile Raft Foundation"
+    }
+  ],
+  "reviewing": [
+    {
+      "publisher": "Springer Nature",
+      "roles": [
+        { "venue": "npj Heritage Science", "role": "Reviewer" },
+        { "venue": "Artificial Intelligence Review", "role": "Reviewer" },
+        { "venue": "Scientific Reports", "role": "Reviewer" },
+        { "venue": "Journal of Umm Al-Qura University for Engineering and Architecture", "role": "Reviewer" }
+      ]
+    },
+    {
+      "publisher": "Elsevier",
+      "roles": [
+        { "venue": "Expert Systems with Applications", "role": "Reviewer" },
+        { "venue": "Advanced Engineering Informatics", "role": "Reviewer" }
+      ]
+    },
+    {
+      "publisher": "Taylor & Francis",
+      "roles": [
+        { "venue": "Journal of Asian Architecture and Building Engineering", "role": "Reviewer" }
+      ]
+    },
+    {
+      "publisher": "Conferences",
+      "roles": [
+        { "venue": "Creative Construction Conference, CCC 2025", "role": "Reviewer" }
+      ]
+    }
+  ],
+  "contact": {
+    "lead": "I welcome collaborations, research inquiries, and academic discussions related to AEC industry digitalization, BIM technologies, and construction innovation. Feel free to reach out for potential partnerships, publication opportunities, or technical consultations.",
+    "email": "saddiqurrehman@khu.ac.kr",
+    "emailLabel": "Academic Email",
+    "emailNote": "Kyung Hee University",
+    "emailCompose": "https://mail.google.com/mail/?view=cm&fs=1&to=saddiqurrehman@khu.ac.kr",
+    "location": {
+      "eyebrow": "Campus",
+      "name": "Kyung Hee University",
+      "sub": "Global Campus · College of Engineering",
+      "korean": "경희대학교 공과대학",
+      "lines": [
+        "1732 Deogyeong-daero, Giheung-gu",
+        "Yongin-si, Gyeonggi-do, 446-701",
+        "Republic of Korea"
+      ],
+      "copy": "Kyung Hee University, College of Engineering, 1732 Deogyeong-daero, Giheung-gu, Yongin-si, Gyeonggi-do, 446-701, Republic of Korea",
+      "lat": 37.2464,
+      "lng": 127.0809,
+      "directions": "https://www.google.com/maps/search/?api=1&query=37.2464,127.0809"
+    }
+  },
+  "social": [
+    { "label": "LinkedIn", "icon": "fab fa-linkedin-in", "href": "https://www.linkedin.com/in/saddiq-ur-rehman-b79212138/", "color": "#0a66c2" },
+    { "label": "GitHub", "icon": "fab fa-github", "href": "https://github.com/isaddiq", "color": "#24292f" },
+    { "label": "Google Scholar", "icon": "fas fa-graduation-cap", "href": "https://scholar.google.com/citations?user=wMH9sSgAAAAJ&hl=en", "color": "#4285f4" },
+    { "label": "ORCID", "icon": "fab fa-orcid", "href": "https://orcid.org/0000-0002-8098-0939", "color": "#a6ce39" },
+    { "label": "ResearchGate", "icon": "fab fa-researchgate", "href": "https://www.researchgate.net/profile/Saddiq-Ur-Rehman?ev=hdr_xprf", "color": "#00ccbb" },
+    { "label": "Scopus", "text": "SC", "href": "https://www.scopus.com/authid/detail.uri?authorId=57203204041", "color": "#e9711c" }
+  ],
+  "copyright": "© 2026 Saddiq Ur Rehman. All rights reserved."
+}

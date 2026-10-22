@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# Stamps today's date into every "last updated" field before each commit:
+#
+#   index.html   "dateModified": "..."                               (JSON-LD)
+#   sitemap.xml  <lastmod>...</lastmod>                              (all entries)
+#
+# Enable in a fresh clone with:   git config core.hooksPath .githooks
+# Bypass for one commit with:     SKIP_DATESTAMP=1 git commit ...
+#
+set -e
+
+[ -n "$SKIP_DATESTAMP" ] && exit 0
+
+# Don't rewrite files mid-merge/rebase; it turns clean merges into conflicts.
+GITDIR=$(git rev-parse --git-dir)
+if [ -f "$GITDIR/MERGE_HEAD" ] || [ -d "$GITDIR/rebase-merge" ] || [ -d "$GITDIR/rebase-apply" ]; then
+  exit 0
+fi
+
+cd "$(git rev-parse --show-toplevel)"
+
+ISO=$(date +%Y-%m-%d)
+
+DATE_RE='[0-9]{4}-[0-9]{2}-[0-9]{2}'
+
+# A file is safe to re-stage only if its worktree copy already matched the
+# index before we touched it. Otherwise `git add` would sweep the user's
+# unstaged edits into this commit.
+was_clean() {
+  git diff --quiet -- "$1" 2>/dev/null
+}
+
+restage() {
+  file=$1
+  clean_before=$2
+  git diff --quiet -- "$file" 2>/dev/null && return 0   # hook changed nothing
+  if [ "$clean_before" = "yes" ]; then
+    git add -- "$file"
+    echo "  updated $file -> $ISO"
+  else
+    echo "  WARNING: $file has unstaged edits; date stamped in the working"
+    echo "           tree but NOT added to this commit (nothing swept in)."
+  fi
+}
+
+echo "pre-commit: stamping last-updated date ($ISO)"
+
+# --- index.html ---------------------------------------------------------
+if [ -f index.html ]; then
+  if was_clean index.html; then CLEAN=yes; else CLEAN=no; fi
+
+  # JSON-LD structured data.
+  sed -i -E "s#(\"dateModified\"[[:space:]]*:[[:space:]]*\")${DATE_RE}(\")#\1${ISO}\2#g" index.html
+
+  restage index.html "$CLEAN"
+fi
+
+# --- sitemap.xml --------------------------------------------------------
+if [ -f sitemap.xml ]; then
+  if was_clean sitemap.xml; then CLEAN=yes; else CLEAN=no; fi
+
+  sed -i -E "s#<lastmod>${DATE_RE}</lastmod>#<lastmod>${ISO}</lastmod>#g" sitemap.xml
+
+  restage sitemap.xml "$CLEAN"
+fi
+
+exit 0

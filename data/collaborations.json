@@ -1,0 +1,56 @@
+{
+  "center": {
+    "name": "Saddiq Ur Rehman",
+    "shortName": "Saddiq Ur Rehman",
+    "university": "Kyung Hee University",
+    "country": "South Korea",
+    "lat": 37.2464,
+    "lng": 127.0809
+  },
+  "note": "Co-authorship network derived from data/publications.json. 'papers' = number of publications co-authored with Saddiq Ur Rehman. Affiliations/countries are best-effort and can be edited here. 'aliases' lists other spellings of an author's name in publications.json; 'lat'/'lng' place a country on the map (use the partner institution's location).",
+  "byAuthor": [
+    { "name": "Inhan Kim", "papers": 22, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Kyung-Eun Hwang", "papers": 7, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Syed Haseeb Shah", "papers": 3, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Jungsik Choi", "papers": 3, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Jiyoung Kim", "aliases": ["Jiyeong Kim"], "papers": 3, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Jihye Shin", "papers": 1, "university": "University of Melbourne", "country": "Australia" },
+    { "name": "Soyeong Ryu", "papers": 2, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Sangsu Lee", "papers": 2, "Industry": "AEC3 Korea", "country": "South Korea" },
+    { "name": "Sejin Lee", "papers": 1, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Hyung soo Kim", "papers": 1, "Industry": "YEORUM Architects Co., Ltd", "country": "South Korea" },
+    { "name": "Junghyun Kim", "papers": 1, "Industry": "AEC3 Korea", "country": "South Korea" },
+    { "name": "Jina Park", "papers": 1, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Eugene Jeong", "papers": 1, "university": "Kyung Hee University", "country": "South Korea" },
+    { "name": "Yong Han Ahn", "papers": 1, "university": "Hanyang University", "country": "South Korea" },
+    { "name": "Hwale-Je Jang", "papers": 1, "university": "Hanyang University", "country": "South Korea" },
+    { "name": "Muhammad Adil", "aliases": ["Mohammad Adil"], "papers": 5, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Shahid Ali Khan", "papers": 5, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Muhammad Shoaib Khan", "papers": 4, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Zeeshan Altaf", "papers": 3, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Murad Ali", "papers": 2, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Naveed Iqbal", "papers": 2, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Muhammad Anwar", "papers": 2, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Noorul Hadi", "papers": 2, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Irfan Jamil", "papers": 2, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Muhammad Mahmood Ul Hassan", "papers": 1, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Muhammad Hamza Arshad", "papers": 1, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Faisal Rehman", "papers": 1, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Muhammad Asim Aman", "papers": 1, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Hizbullah Khan", "papers": 1, "university": "UET Peshawar", "country": "Pakistan" },
+    { "name": "Bazid Khan", "papers": 1, "university": "UET Peshawar", "country": "Pakistan" }
+  ],
+  "byUniversity": [
+    { "name": "Kyung Hee University", "papers": 24, "authors": 9, "country": "South Korea" },
+    { "name": "Hanyang University", "papers": 1, "authors": 2, "country": "South Korea" },
+    { "name": "University of Melbourne", "papers": 1, "authors": 1, "country": "Australia" },
+    { "name": "YEORUM Architects Co., Ltd", "papers": 1, "authors": 1, "country": "South Korea" },
+    { "name": "AEC3 Korea", "papers": 2, "authors": 2, "country": "South Korea" },
+    { "name": "UET Peshawar", "papers": 8, "authors": 15, "country": "Pakistan" }
+  ],
+  "byCountry": [
+    { "name": "South Korea", "papers": 24, "authors": 14, "lat": 37.2464, "lng": 127.0809 },
+    { "name": "Australia", "papers": 1, "authors": 1, "lat": -37.7983, "lng": 144.961 },
+    { "name": "Pakistan", "papers": 8, "authors": 15, "lat": 34.0015, "lng": 71.4854 }
+  ]
+}

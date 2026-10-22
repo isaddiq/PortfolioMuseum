@@ -1,0 +1,482 @@
+{
+ "assets/images/certificates/best-paper-award-2022.png": {
+  "src": "assets/museum/images/certificates/best-paper-award-2022.webp",
+  "w": 1055,
+  "h": 1682
+ },
+ "assets/images/certificates/best-paper-award-2023.jpg": {
+  "src": "assets/museum/images/certificates/best-paper-award-2023.webp",
+  "w": 1792,
+  "h": 2584
+ },
+ "assets/images/certificates/coursera-bim-application-for-engineers-certificate.jpeg": {
+  "src": "assets/museum/images/certificates/coursera-bim-application-for-engineers-certificate.webp",
+  "w": 1772,
+  "h": 928
+ },
+ "assets/images/certificates/coursera-programming-for-everybody-python-certificate.jpg": {
+  "src": "assets/museum/images/certificates/coursera-programming-for-everybody-python-certificate.webp",
+  "w": 6600,
+  "h": 5100
+ },
+ "assets/images/certificates/coursera-python-access-web-data-certificate.jpg": {
+  "src": "assets/museum/images/certificates/coursera-python-access-web-data-certificate.webp",
+  "w": 6600,
+  "h": 5100
+ },
+ "assets/images/certificates/coursera-python-data-structures-certificate.jpg": {
+  "src": "assets/museum/images/certificates/coursera-python-data-structures-certificate.webp",
+  "w": 6600,
+  "h": 5100
+ },
+ "assets/images/certificates/elsevier-certificate-of-reviewing-2026-09-aei.jpg": {
+  "src": "assets/museum/images/certificates/elsevier-certificate-of-reviewing-2026-09-aei.webp",
+  "w": 2376,
+  "h": 1836
+ },
+ "assets/images/certificates/elsevier-certificate-of-reviewing-2026.jpg": {
+  "src": "assets/museum/images/certificates/elsevier-certificate-of-reviewing-2026.webp",
+  "w": 2310,
+  "h": 1785
+ },
+ "assets/images/certificates/iccepm-2024-participation-certificate.jpg": {
+  "src": "assets/museum/images/certificates/iccepm-2024-participation-certificate.webp",
+  "w": 796,
+  "h": 1124
+ },
+ "assets/images/certificates/iccepm-2025-participation-certificate.jpg": {
+  "src": "assets/museum/images/certificates/iccepm-2025-participation-certificate.webp",
+  "w": 13100,
+  "h": 7300
+ },
+ "assets/images/certificates/ijser-polyethylene-sand-blocks-publication-certificate.jpg": {
+  "src": "assets/museum/images/certificates/ijser-polyethylene-sand-blocks-publication-certificate.webp",
+  "w": 6600,
+  "h": 5100
+ },
+ "assets/images/certificates/khu-academic-excellence-award-2026.png": {
+  "src": "assets/museum/images/certificates/khu-academic-excellence-award-2026.webp",
+  "w": 629,
+  "h": 665
+ },
+ "assets/images/certificates/microsoft-office-specialist-word-2013-certificate.png": {
+  "src": "assets/museum/images/certificates/microsoft-office-specialist-word-2013-certificate.webp",
+  "w": 1392,
+  "h": 1031
+ },
+ "assets/images/certificates/springer-nature-reviewer-certificate-2026-04-16.jpg": {
+  "src": "assets/museum/images/certificates/springer-nature-reviewer-certificate-2026-04-16.webp",
+  "w": 2976,
+  "h": 4209
+ },
+ "assets/images/certificates/springer-nature-reviewer-certificate-2026-05-08.jpg": {
+  "src": "assets/museum/images/certificates/springer-nature-reviewer-certificate-2026-05-08.webp",
+  "w": 2976,
+  "h": 4209
+ },
+ "assets/images/certificates/springer-nature-reviewer-certificate-2026-09-08.jpg": {
+  "src": "assets/museum/images/certificates/springer-nature-reviewer-certificate-2026-09-08.webp",
+  "w": 2976,
+  "h": 4209
+ },
+ "assets/images/certificates/springer-nature-reviewer-certificate-2026-10-06-umm-al-qura.jpg": {
+  "src": "assets/museum/images/certificates/springer-nature-reviewer-certificate-2026-10-06-umm-al-qura.webp",
+  "w": 1488,
+  "h": 2104
+ },
+ "assets/images/certificates/springer-nature-reviewer-certificate-2026-10-06.jpg": {
+  "src": "assets/museum/images/certificates/springer-nature-reviewer-certificate-2026-10-06.webp",
+  "w": 2380,
+  "h": 3367
+ },
+ "assets/images/certificates/uet-peshawar-survey-camp-certificate.jpg": {
+  "src": "assets/museum/images/certificates/uet-peshawar-survey-camp-certificate.webp",
+  "w": 4958,
+  "h": 7017
+ },
+ "assets/images/certificates/unity-creative-core-certificate.jpg": {
+  "src": "assets/museum/images/certificates/unity-creative-core-certificate.webp",
+  "w": 1056,
+  "h": 816
+ },
+ "assets/images/certificates/unity-essentials-pathway-certificate.jpg": {
+  "src": "assets/museum/images/certificates/unity-essentials-pathway-certificate.webp",
+  "w": 1056,
+  "h": 816
+ },
+ "assets/images/certificates/unity-junior-programmer-certificate.jpg": {
+  "src": "assets/museum/images/certificates/unity-junior-programmer-certificate.webp",
+  "w": 1056,
+  "h": 816
+ },
+ "assets/images/certificates/unity-vr-development-certificate.jpg": {
+  "src": "assets/museum/images/certificates/unity-vr-development-certificate.webp",
+  "w": 1056,
+  "h": 816
+ },
+ "assets/images/covers/activities-cover.webp": {
+  "src": "assets/museum/images/covers/activities-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/certifications-awards-cover.webp": {
+  "src": "assets/museum/images/covers/certifications-awards-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/contact-cover.webp": {
+  "src": "assets/museum/images/covers/contact-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/education-cover.webp": {
+  "src": "assets/museum/images/covers/education-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/experience-cover.webp": {
+  "src": "assets/museum/images/covers/experience-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/home-cover.webp": {
+  "src": "assets/museum/images/covers/home-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/projects-cover.webp": {
+  "src": "assets/museum/images/covers/projects-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/publication-cover.webp": {
+  "src": "assets/museum/images/covers/publication-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/skills-cover.webp": {
+  "src": "assets/museum/images/covers/skills-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/covers/software-cover.webp": {
+  "src": "assets/museum/images/covers/software-cover.webp",
+  "w": 2048,
+  "h": 768
+ },
+ "assets/images/Keywords/ai.webp": {
+  "src": "assets/museum/images/Keywords/ai.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/Keywords/bim.webp": {
+  "src": "assets/museum/images/Keywords/bim.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/Keywords/dfma.webp": {
+  "src": "assets/museum/images/Keywords/dfma.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/Keywords/informatics.webp": {
+  "src": "assets/museum/images/Keywords/informatics.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/Keywords/interop.webp": {
+  "src": "assets/museum/images/Keywords/interop.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/Keywords/robotics.webp": {
+  "src": "assets/museum/images/Keywords/robotics.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/Keywords/twin.webp": {
+  "src": "assets/museum/images/Keywords/twin.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/Keywords/xr.webp": {
+  "src": "assets/museum/images/Keywords/xr.webp",
+  "w": 724,
+  "h": 543
+ },
+ "assets/images/news/graduation.jpg": {
+  "src": "assets/museum/images/news/graduation.webp",
+  "w": 3024,
+  "h": 4032
+ },
+ "assets/images/news/jcem-dfx-modular-highrise-thumb.jpg": {
+  "src": "assets/museum/images/news/jcem-dfx-modular-highrise-thumb.webp",
+  "w": 960,
+  "h": 532
+ },
+ "assets/images/news/jcem-dfx-modular-highrise.jpg": {
+  "src": "assets/museum/images/news/jcem-dfx-modular-highrise.webp",
+  "w": 2400,
+  "h": 746
+ },
+ "assets/images/profile/Profile_1.png": {
+  "src": "assets/museum/images/profile/Profile_1.webp",
+  "w": 1102,
+  "h": 1427
+ },
+ "assets/images/profile/Profile_2.jpg": {
+  "src": "assets/museum/images/profile/Profile_2.webp",
+  "w": 3024,
+  "h": 4032
+ },
+ "assets/images/profile/Profile_3.jpg": {
+  "src": "assets/museum/images/profile/Profile_3.webp",
+  "w": 1080,
+  "h": 1080
+ },
+ "assets/images/projects/ai-architectural-design-project.webp": {
+  "src": "assets/museum/images/projects/ai-architectural-design-project.webp",
+  "w": 1448,
+  "h": 1086
+ },
+ "assets/images/projects/bending-active-structure-project.png": {
+  "src": "assets/museum/images/projects/bending-active-structure-project.webp",
+  "w": 1566,
+  "h": 1005
+ },
+ "assets/images/projects/bim-ai-cost-estimation-project.webp": {
+  "src": "assets/museum/images/projects/bim-ai-cost-estimation-project.webp",
+  "w": 1448,
+  "h": 1086
+ },
+ "assets/images/projects/energy-form-project.png": {
+  "src": "assets/museum/images/projects/energy-form-project.webp",
+  "w": 1536,
+  "h": 1024
+ },
+ "assets/images/projects/open-bim-code-compliance-project.webp": {
+  "src": "assets/museum/images/projects/open-bim-code-compliance-project.webp",
+  "w": 1448,
+  "h": 1086
+ },
+ "assets/images/projects/robot-friendly-building-design-project.webp": {
+  "src": "assets/museum/images/projects/robot-friendly-building-design-project.webp",
+  "w": 1448,
+  "h": 1086
+ },
+ "assets/images/seminar/Seminar_CIOB.jpg": {
+  "src": "assets/museum/images/seminar/Seminar_CIOB.webp",
+  "w": 3367,
+  "h": 2382
+ },
+ "assets/images/software/bim-graph-visualization-preview.jpg": {
+  "src": "assets/museum/images/software/bim-graph-visualization-preview.webp",
+  "w": 1504,
+  "h": 870
+ },
+ "assets/images/software/bim2bot-lab-hero.webp": {
+  "src": "assets/museum/images/software/bim2bot-lab-hero.webp",
+  "w": 1911,
+  "h": 900
+ },
+ "assets/images/software/bimunixchange-aec-to-xr-pipeline.png": {
+  "src": "assets/museum/images/software/bimunixchange-aec-to-xr-pipeline.webp",
+  "w": 1672,
+  "h": 941
+ },
+ "assets/images/software/ifc-explorer-web-viewer-screenshot.jpg": {
+  "src": "assets/museum/images/software/ifc-explorer-web-viewer-screenshot.webp",
+  "w": 1912,
+  "h": 875
+ },
+ "assets/images/software/ifc2unity-editor-preview.jpg": {
+  "src": "assets/museum/images/software/ifc2unity-editor-preview.webp",
+  "w": 4776,
+  "h": 3752
+ },
+ "assets/images/software/ifcusd-converter-preview.png": {
+  "src": "assets/museum/images/software/ifcusd-converter-preview.webp",
+  "w": 1536,
+  "h": 1024
+ },
+ "assets/images/software/roboaccess-bim-preview.png": {
+  "src": "assets/museum/images/software/roboaccess-bim-preview.webp",
+  "w": 1672,
+  "h": 941
+ },
+ "assets/images/venues/automation-in-construction.jpg": {
+  "src": "assets/museum/images/venues/automation-in-construction.webp",
+  "w": 576,
+  "h": 768
+ },
+ "assets/images/venues/journal-of-computational-design-and-engineering.jpg": {
+  "src": "assets/museum/images/venues/journal-of-computational-design-and-engineering.webp",
+  "w": 571,
+  "h": 768
+ },
+ "assets/icons/skills/anthropic-claude-logo.png": {
+  "src": "assets/museum/icons/skills/anthropic-claude-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/autodesk-3ds-max-logo.png": {
+  "src": "assets/museum/icons/skills/autodesk-3ds-max-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/autodesk-autocad-logo.png": {
+  "src": "assets/museum/icons/skills/autodesk-autocad-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/autodesk-navisworks-logo.png": {
+  "src": "assets/museum/icons/skills/autodesk-navisworks-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/autodesk-revit-logo.png": {
+  "src": "assets/museum/icons/skills/autodesk-revit-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/bentley-synchro-logo.png": {
+  "src": "assets/museum/icons/skills/bentley-synchro-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/blender-logo.png": {
+  "src": "assets/museum/icons/skills/blender-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/cursor-logo.png": {
+  "src": "assets/museum/icons/skills/cursor-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/flask-logo.png": {
+  "src": "assets/museum/icons/skills/flask-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/github-copilot-logo.png": {
+  "src": "assets/museum/icons/skills/github-copilot-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/github-logo.png": {
+  "src": "assets/museum/icons/skills/github-logo.webp",
+  "w": 512,
+  "h": 512
+ },
+ "assets/icons/skills/google-antigravity-logo.png": {
+  "src": "assets/museum/icons/skills/google-antigravity-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/graphisoft-archicad-logo.png": {
+  "src": "assets/museum/icons/skills/graphisoft-archicad-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/hugging-face-transformers-logo.png": {
+  "src": "assets/museum/icons/skills/hugging-face-transformers-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/matplotlib-logo.png": {
+  "src": "assets/museum/icons/skills/matplotlib-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/nltk-logo.png": {
+  "src": "assets/museum/icons/skills/nltk-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/numpy-logo.png": {
+  "src": "assets/museum/icons/skills/numpy-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/openai-codex-logo.png": {
+  "src": "assets/museum/icons/skills/openai-codex-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/pandas-logo.png": {
+  "src": "assets/museum/icons/skills/pandas-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/rhinoceros-3d-logo.png": {
+  "src": "assets/museum/icons/skills/rhinoceros-3d-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/sketchup-logo.png": {
+  "src": "assets/museum/icons/skills/sketchup-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/twinmotion-logo.png": {
+  "src": "assets/museum/icons/skills/twinmotion-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/unity-logo.png": {
+  "src": "assets/museum/icons/skills/unity-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/skills/unreal-engine-logo.png": {
+  "src": "assets/museum/icons/skills/unreal-engine-logo.webp",
+  "w": 48,
+  "h": 48
+ },
+ "assets/icons/social/google-scholar-logo.png": {
+  "src": "assets/museum/icons/social/google-scholar-logo.webp",
+  "w": 2048,
+  "h": 2048
+ },
+ "assets/icons/social/linkedin-logo.png": {
+  "src": "assets/museum/icons/social/linkedin-logo.webp",
+  "w": 512,
+  "h": 512
+ },
+ "assets/icons/social/orcid-id-logo.png": {
+  "src": "assets/museum/icons/social/orcid-id-logo.webp",
+  "w": 512,
+  "h": 512
+ },
+ "assets/icons/social/researchgate-logo.png": {
+  "src": "assets/museum/icons/social/researchgate-logo.webp",
+  "w": 2048,
+  "h": 2048
+ },
+ "assets/logos/organizations/buildingsmart-korea-logo.png": {
+  "src": "assets/museum/logos/organizations/buildingsmart-korea-logo.webp",
+  "w": 119,
+  "h": 119
+ },
+ "assets/logos/organizations/ita-lab-logo.png": {
+  "src": "assets/museum/logos/organizations/ita-lab-logo.webp",
+  "w": 296,
+  "h": 123
+ },
+ "assets/logos/organizations/kyung-hee-university-logo.png": {
+  "src": "assets/museum/logos/organizations/kyung-hee-university-logo.webp",
+  "w": 1285,
+  "h": 1023
+ },
+ "assets/logos/organizations/uet-peshawar-logo.png": {
+  "src": "assets/museum/logos/organizations/uet-peshawar-logo.webp",
+  "w": 640,
+  "h": 629
+ },
+ "assets/logos/organizations/value-engineering-pakistan-logo.png": {
+  "src": "assets/museum/logos/organizations/value-engineering-pakistan-logo.webp",
+  "w": 512,
+  "h": 512
+ }
+}

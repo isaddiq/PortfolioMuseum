@@ -1,0 +1,316 @@
+{
+  "programming": {
+    "title": "Programming Languages",
+    "icon": "fas fa-code",
+    "skills": [
+      {
+        "name": "Python",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 4,
+        "description": "Extensive experience in data analysis, machine learning, and automation",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg"
+      },
+      {
+        "name": "C#",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 2,
+        "description": "Game development with Unity and desktop applications",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg"
+      },
+      {
+        "name": "JavaScript",
+        "level": "Basic",
+        "percentage": 30,
+        "years": 2,
+        "description": "Web development and interactive frontend applications",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg"
+      },
+      {
+        "name": "HTML & CSS",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 3,
+        "description": "Web development and interactive frontend applications",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/html5/html5-original.svg"
+      },
+      {
+        "name": "R",
+        "level": "Basic",
+        "percentage": 40,
+        "years": 1,
+        "description": "Statistical analysis and data visualization",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/r/r-original.svg"
+      }
+    ]
+  },
+  "bim_software": {
+    "title": "BIM & CAD Software",
+    "icon": "fas fa-cube",
+    "skills": [
+      {
+        "name": "Autodesk Revit",
+        "level": "Expert",
+        "percentage": 95,
+        "years": 5,
+        "description": "Advanced BIM modeling, family creation, and project coordination",
+        "icon": "assets/icons/skills/autodesk-revit-logo.png"
+      },
+      {
+        "name": "Navisworks",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 3,
+        "description": "Model coordination, clash detection, and 4D simulation",
+        "icon": "assets/icons/skills/autodesk-navisworks-logo.png"
+      },
+      {
+        "name": "Synchro 4D",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 5,
+        "description": "Model coordination, clash detection, and 4D simulation",
+        "icon": "https://www.bentley.com/wp-content/uploads/2022/04/synchro-software-logo-black-100X100.svg?ver=1691701928"
+      },
+      {
+        "name": "Rhinoceros 3D",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 2,
+        "description": "Visual programming for  parametric design",
+        "icon": "assets/icons/skills/rhinoceros-3d-logo.png"
+      },
+      {
+        "name": "ArchiCAD",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 2,
+        "description": "3D modeling and conceptual design",
+        "icon": "assets/icons/skills/graphisoft-archicad-logo.png"
+      },
+      {
+        "name": "AutoCAD",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 4,
+        "description": "2D drafting and technical documentation",
+        "icon": "assets/icons/skills/autodesk-autocad-logo.png"
+      },
+      {
+        "name": "SketchUp",
+        "level": "Advanced",
+        "percentage": 90,
+        "years": 5,
+        "description": "3D modeling and conceptual design",
+        "icon": "assets/icons/skills/sketchup-logo.png"
+      }
+    ]
+  },
+  "game_engines": {
+    "title": "Game Engines & 3D",
+    "icon": "fas fa-gamepad",
+    "skills": [
+      {
+        "name": "Unity 3D",
+        "level": "Advanced",
+        "percentage": 85,
+        "years": 3,
+        "description": "Game development, VR/AR/MR applications, and BIM visualization",
+        "icon": "assets/icons/skills/unity-logo.png"
+      },
+      {
+        "name": "Unreal Engine",
+        "level": "Basic",
+        "percentage": 30,
+        "years": 1,
+        "description": "Real-time rendering and architectural visualization",
+        "icon": "assets/icons/skills/unreal-engine-logo.png"
+      },
+      {
+        "name": "Blender",
+        "level": "Basic",
+        "percentage": 30,
+        "years": 1,
+        "description": "3D modeling, animation, and rendering",
+        "icon": "assets/icons/skills/blender-logo.png"
+      },
+      {
+        "name": "3ds Max",
+        "level": "Basic",
+        "percentage": 55,
+        "years": 1,
+        "description": "Architectural visualization and modeling",
+        "icon": "assets/icons/skills/autodesk-3ds-max-logo.png"
+      },
+      {
+        "name": "Twinmotion",
+        "level": "Intermediate",
+        "percentage": 55,
+        "years": 1,
+        "description": "Architectural visualization, modeling, and Simulation",
+        "icon": "https://img.logokit.com/twinmotion.com"
+      }
+    ]
+  },
+  "ai_ml": {
+    "title": "AI & Machine Learning",
+    "icon": "fas fa-brain",
+    "skills": [
+      {
+        "name": "NLTK",
+        "level": "Advanced",
+        "percentage": 85,
+        "years": 2,
+        "description": "Natural language processing for design recommendation systems",
+        "icon": "assets/icons/skills/nltk-logo.png"
+      },
+      {
+        "name": "pandas",
+        "level": "intermediate",
+        "percentage": 60,
+        "years": 2,
+        "description": "Data manipulation and analyses",
+        "icon": "assets/icons/skills/pandas-logo.png"
+      },
+      {
+        "name": "numpy",
+        "level": "intermediate",
+        "percentage": 60,
+        "years": 2,
+        "description": "computing with Python",
+        "icon": "assets/icons/skills/numpy-logo.png"
+      },
+      {
+        "name": "transformers",
+        "level": "basic",
+        "percentage": 30,
+        "years": 1,
+        "description": "for LLM training and usage",
+        "icon": "assets/icons/skills/hugging-face-transformers-logo.png"
+      },
+      {
+        "name": "matplotlib",
+        "level": "Advanced",
+        "percentage": 85,
+        "years": 2,
+        "description": "Matplotable for data analysis using Python",
+        "icon": "assets/icons/skills/matplotlib-logo.png"
+      }
+    ]
+  },
+  "tools": {
+    "title": "Development Tools",
+    "icon": "fas fa-tools",
+    "skills": [
+      {
+        "name": "GitHub",
+        "level": "Advanced",
+        "percentage": 80,
+        "years": 3,
+        "description": "Version control and collaborative development",
+        "icon": "assets/icons/skills/github-logo.png"
+      },
+      {
+        "name": "VS Code",
+        "level": "Expert",
+        "percentage": 95,
+        "years": 4,
+        "description": "writing and debugging code",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vscode/vscode-original.svg"
+      },
+      {
+        "name": "Visual studio",
+        "level": "Expert",
+        "percentage": 90,
+        "years": 1,
+        "description": "mostly used for Revit Plugin development",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/visualstudio/visualstudio-plain.svg"
+      },
+      {
+        "name": "Jupyter",
+        "level": "Advanced",
+        "percentage": 80,
+        "years": 4,
+        "description": "Data analysis and research documentation",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jupyter/jupyter-original.svg"
+      }
+    ]
+  },
+  "languages": {
+    "title": "Programming Frameworks",
+    "icon": "fas fa-layer-group",
+    "skills": [
+      {
+        "name": "vue.js",
+        "level": "Basic",
+        "percentage": 30,
+        "years": 1,
+        "description": "Frontend web development and component-based architecture",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg"
+      },
+      {
+        "name": "node.js",
+        "level": "Basic",
+        "percentage": 30,
+        "years": 1,
+        "description": "scalable web servers and RESTful API",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nodejs/nodejs-original.svg"
+      },
+      {
+        "name": "Flask",
+        "level": "Basic",
+        "percentage": 40,
+        "years": 1,
+        "description": "Python web framework for API development",
+        "icon": "assets/icons/skills/flask-logo.png"
+      }
+    ]
+  },
+  "agentic_coding": {
+    "title": "Agentic & AI-Assisted Coding",
+    "icon": "fas fa-robot",
+    "skills": [
+      {
+        "name": "GitHub Copilot",
+        "level": "Expert",
+        "percentage": 95,
+        "years": 2,
+        "description": "AI pair programmer for code completion, generation, and refactoring inside VS Code",
+        "icon": "assets/icons/skills/github-copilot-logo.png"
+      },
+      {
+        "name": "Cursor",
+        "level": "Advanced",
+        "percentage": 85,
+        "years": 1,
+        "description": "AI-first code editor with inline chat, multi-file edits, and codebase context",
+        "icon": "assets/icons/skills/cursor-logo.svg"
+      },
+      {
+        "name": "Claude Code",
+        "level": "Advanced",
+        "percentage": 85,
+        "years": 1,
+        "description": "Agentic CLI coding assistant by Anthropic for autonomous multi-step development tasks",
+        "icon": "assets/icons/skills/anthropic-claude-logo.png"
+      },
+      {
+        "name": "OpenAI Codex",
+        "level": "Intermediate",
+        "percentage": 70,
+        "years": 1,
+        "description": "Cloud-based agentic coding agent for automated code generation and task execution",
+        "icon": "assets/icons/skills/openai-codex-logo.png"
+      },
+      {
+        "name": "Antigravity",
+        "level": "Intermediate",
+        "percentage": 65,
+        "years": 1,
+        "description": "AI-powered agentic coding tool for autonomous code generation and project workflows",
+        "icon": "https://upload.wikimedia.org/wikipedia/commons/5/50/Google_Antigravity_Logo.svg"
+      }
+    ]
+  }
+}

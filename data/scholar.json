@@ -1,0 +1,70 @@
+{
+  "citations": 141,
+  "hIndex": 6,
+  "i10Index": 4,
+  "scholarId": "wMH9sSgAAAAJ",
+  "profileUrl": "https://scholar.google.com/citations?user=wMH9sSgAAAAJ&hl=en",
+  "updated": "2026-10-18",
+  "papers": [
+    {
+      "title": "Advancing BIM and game engine integration in the AEC industry: Innovations, challenges, and future directions",
+      "citations": 46,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=6336344139067388383"
+    },
+    {
+      "title": "Data-driven integration framework for four-dimensional building information modeling simulation in modular construction: A case study approach",
+      "citations": 28,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=10613640687524639937"
+    },
+    {
+      "title": "Client-centered detached modular housing: Natural language processing-enabled design recommender system",
+      "citations": 24,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=17542689973940571319"
+    },
+    {
+      "title": "An analysis and consolidation of DfMA based construction guidelines and its validation through a Korean case study",
+      "citations": 14,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=13216295691154209760"
+    },
+    {
+      "title": "Semantic-enriched framework for asynchronous bidirectional BIM data exchange with immersive visualization platform",
+      "citations": 9,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=16989541369909133627"
+    },
+    {
+      "title": "Transformer-based framework for mapping client requirements to BIM",
+      "citations": 7,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=385118629445390655"
+    },
+    {
+      "title": "Experimental study of comparison of settlement behavior of pile raft foundation with batter and vertical piles",
+      "citations": 3,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=2430113067654477068"
+    },
+    {
+      "title": "Mechanical properties of polyethylene-sand blocks produced from recycled plastic bags",
+      "citations": 3,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=5659214079728310100"
+    },
+    {
+      "title": "Shape Grammar-Driven BIM Model Database for a Modular Building Design Recommender System",
+      "citations": 3,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=10896345574957051228"
+    },
+    {
+      "title": "Finite Element Analysis of Brick Masonry",
+      "citations": 2,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=1689968747449099659"
+    },
+    {
+      "title": "BIM-based visualization of downstream activities in DfMA-oriented modern methods of construction",
+      "citations": 1,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=14945949526660079034"
+    },
+    {
+      "title": "INTEGRATION OF 4D BIM AND VR FOR INTERACTIVE MODULAR BUILDING MANUFACTURING SIMULATIONS IN A FACTORY-CONTROLLED ENVIRONMENT",
+      "citations": 1,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=11893768137929738976"
+    }
+  ]
+}

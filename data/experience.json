@@ -1,0 +1,93 @@
+{
+  "organizations": {
+    "khu": {
+      "name": "Kyung Hee University",
+      "logo": "assets/logos/organizations/kyung-hee-university-logo.png",
+      "icon": "fas fa-university",
+      "website": "https://www.khu.ac.kr",
+      "department": "Department of Architecture"
+    }
+  },
+  "academic_experience": [
+    {
+      "id": "exp_004",
+      "position": "Researcher",
+      "organization": "buildingSMART Korea",
+      "logo": "assets/logos/organizations/buildingsmart-korea-logo.png",
+      "icon": "fas fa-building",
+      "duration": "September 2026 - October 2026",
+      "location": "Seoul, Korea",
+      "website": "https://www.buildingsmart.or.kr/",
+      "primary_responsibilities": [
+        "Research on human-robot interaction in the built environment",
+        "Design and evaluation of interfaces for human-robot collaboration on site",
+        "Integration of BIM and digital twin data into robotic workflows",
+        "Manuscript preparation and review"
+      ]
+    },
+    {
+      "id": "exp_001",
+      "position": "Research Assistant",
+      "organization": "ITA Lab, Kyung Hee University",
+      "logo": "assets/logos/organizations/ita-lab-logo.png",
+      "icon": "fas fa-university",
+      "department": "Department of Architecture",
+      "duration": "March 2021 - August 2026",
+      "location": "Global Campus, Korea",
+      "website": "http://italab.khu.ac.kr/",
+      "primary_responsibilities": [
+        "Research on BIM and game engine integration",
+        "Development of VR/AR applications for AEC industry",
+        "Data collection and analysis for research projects",
+        "Manuscript preparation and review"
+      ],
+      "group": "khu",
+      "unit": "ITA Lab",
+      "unit_website": "http://italab.khu.ac.kr/"
+    },
+    {
+      "id": "exp_002",
+      "position": "Teaching Assistant",
+      "organization": "Kyung Hee University",
+      "logo": "assets/logos/organizations/kyung-hee-university-logo.png",
+      "icon": "fas fa-chalkboard-teacher",
+      "department": "Department of Architecture",
+      "course": "AR53100 BIM and IPD",
+      "duration": "March 2023 - June 2023",
+      "location": "Global Campus, Korea",
+      "website": "https://www.khu.ac.kr",
+      "primary_responsibilities": [
+        "Conducted lab sessions for BIM software training",
+        "Graded assignments and provided feedback",
+        "Mentored undergraduate students in design projects",
+        "Developed course materials and tutorials"
+      ],
+      "group": "khu"
+    }
+  ],
+  "industry_experience": [
+    {
+      "id": "exp_003",
+      "position": "Junior Planning Engineer",
+      "organization": "Value Engineering Pakistan",
+      "logo": "assets/logos/organizations/value-engineering-pakistan-logo.png",
+      "icon": "fas fa-building",
+      "department": "Pre-Construction",
+      "duration": "August 2019 - February 2021",
+      "location": "Seoul, Korea",
+      "website": "https://thevalueengineering.com/",
+      "Role": "Quantity and cost estimation for bid proposal of USA based construction projects",
+      "primary_responsibilities": [
+        "Quantity and cost estimation for bid proposal of USA based construction projects",
+        "Conducted BIM training sessions for project teams",
+        "Developed custom Revit plugins for project-specific needs",
+        "Coordinated with international design teams"
+      ],
+      "achievements": [
+        "Successfully implemented BIM on 3 major projects",
+        "Reduced design conflicts by 40% through 4D modeling",
+        "Trained over 50 engineers in BIM technologies"
+      ]
+    }
+  ]
+}
