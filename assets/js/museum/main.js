@@ -5,6 +5,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { loadAllData } from './data.js';
 import { ROOMS, ROOM_BY_ID, roomAt, buildWorld, applyWorldTheme, loadSurfaces, bakeFloorOcclusion } from './world.js';
 import { Museum } from './exhibits.js';
+import { Visitors } from './visitors.js';
 import { Controls } from './controls.js';
 import { Panels, controlsHelp, closeLightbox } from './panels.js';
 import { createPipeline } from './post.js';
@@ -18,8 +19,8 @@ const ROOM_KEYS = ['home', 'education', 'experience', 'publications', 'projects'
 
 /** High: bloom, shadows, sharper textures. Low: for phones and small GPUs. */
 const QUALITY = {
-    high: { pixelRatio: 1.5, bloom: true, shadows: true, paintScale: 1.75, imagePxPerM: 760 },
-    low: { pixelRatio: 1.25, bloom: false, shadows: false, paintScale: 1.15, imagePxPerM: 440 }
+    high: { pixelRatio: 1.5, bloom: true, shadows: true, paintScale: 1.75, imagePxPerM: 760, visitors: 10 },
+    low: { pixelRatio: 1.25, bloom: false, shadows: false, paintScale: 1.15, imagePxPerM: 440, visitors: 5 }
 };
 
 const $ = (id) => document.getElementById(id);
@@ -401,6 +402,9 @@ async function main() {
     applyWorldTheme(world, scene, document.documentElement.dataset.theme);
     onPlayerMoved(true);
 
+    // Visitors arrive once the doors are open (they load in the background).
+    let visitors = null;
+
     // Render loop: draws only when something changed or something nearby moves.
     let last = performance.now();
     function frame(now) {
@@ -411,6 +415,7 @@ async function main() {
             state.needsRender = true;
         }
         if (museum.animate(now / 1000, dt, controls.x, controls.z)) state.needsRender = true;
+        if (visitors?.update(now / 1000, dt, controls.x, controls.z)) state.needsRender = true;
         if (state.needsRender) {
             state.needsRender = false;
             if (pipeline) pipeline.render();
@@ -433,6 +438,8 @@ async function main() {
     });
     setProgress(1, 'Welcome');
     enter();
+    const people = new Visitors({ scene, museum, world, count: QUALITY[state.quality].visitors });
+    people.load().then(() => { visitors = people; }).catch((error) => console.warn('Visitors could not load', error));
 
     function enter() {
         if (state.entered) return;
@@ -451,7 +458,7 @@ async function main() {
     }
 
     // Debug/automation handle.
-    window.__museum = { controls, museum, world, goToRoom, goToExhibit, panels, scene, camera, renderer, requestRender, setQuality };
+    window.__museum = { controls, museum, world, goToRoom, goToExhibit, panels, scene, camera, renderer, requestRender, setQuality, get visitors() { return visitors; } };
 }
 
 // ---------------------------------------------------------------------------
@@ -467,6 +474,7 @@ function pathClear(colliders, a, b) {
         const z = a.z + ((b.z - a.z) * i) / steps;
         if (!roomAt(x, z)) return false;
         for (const c of colliders) {
+            if (c.person) continue;   // people step aside
             if (c.r !== undefined ? Math.hypot(x - c.x, z - c.z) < c.r + 0.1
                 : x > c.x1 - 0.1 && x < c.x2 + 0.1 && z > c.z1 - 0.1 && z < c.z2 + 0.1) return false;
         }

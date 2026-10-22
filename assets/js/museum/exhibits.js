@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import * as art from './art.js';
-import { ROOMS, ROOM_BY_ID, gallerySurfaces, galleryPoint, SKIN, EYE } from './world.js';
+import { ROOMS, ROOM_BY_ID, gallerySurfaces, galleryPoint, roomAt, SKIN, EYE } from './world.js';
 import { textureInfo, pubVenue } from './data.js';
 import { clamp, stripTags, formatDate, easeInOut, seededRandom } from './util.js';
 
@@ -95,11 +95,14 @@ export class Museum {
         };
         if (!s.grain) this.frameMats.oak.color.set('#7a5634');
         this.matMat = new THREE.MeshStandardMaterial({ color: '#f3efe7', roughness: 0.92 });
-        this.plaqueEdge = new THREE.MeshStandardMaterial({ color: '#8a6a43', roughness: 0.35, metalness: 0.85 });
         this.washTexture = new THREE.CanvasTexture(art.paintWash());
         this.washTexture.colorSpace = THREE.SRGBColorSpace;
         this.glowTexture = new THREE.CanvasTexture(art.paintGlow());
         this.beamTexture = new THREE.CanvasTexture(art.paintBeam());
+        // Painted lettering shares the plaster's bumps: the same normal map,
+        // read through a second UV set laid out in metres like the walls'.
+        this.decalNormal = s.plaster?.normal ? s.plaster.normal.clone() : null;
+        if (this.decalNormal) this.decalNormal.channel = 1;
         this.plinthMat = new THREE.MeshStandardMaterial({ color: '#f1ede6', roughness: 0.6, normalMap: s.plaster?.normal || null, normalScale: new THREE.Vector2(0.2, 0.2) });
         this.darkStone = new THREE.MeshStandardMaterial({ color: '#25221f', roughness: 0.3, metalness: 0.15 });
     }
@@ -131,10 +134,10 @@ export class Museum {
     // Exhibit registry
     // -----------------------------------------------------------------------
 
-    register(exhibit, meshes, focus, normal, size) {
+    register(exhibit, meshes, focus, normal, size, distance) {
         const id = exhibit.id || `exhibit-${this.exhibits.length}`;
         const record = { ...exhibit, id, focus };
-        if (focus && normal) record.view = this.viewFor(focus, normal, size || 1.5);
+        if (focus && normal) record.view = this.viewFor(focus, normal, size || 1.5, distance);
         this.exhibits.push(record);
         this.byId.set(id, record);
         for (const mesh of meshes.filter(Boolean)) {
@@ -148,8 +151,8 @@ export class Museum {
         return record;
     }
 
-    viewFor(focus, normal, size) {
-        const dist = clamp(size * 1.15 + 0.9, 2.2, 7.5);
+    viewFor(focus, normal, size, distance) {
+        const dist = distance ?? clamp(size * 1.15 + 0.9, 2.2, 7.5);
         const x = focus.x + normal.x * dist;
         const z = focus.z + normal.z * dist;
         return {
@@ -190,9 +193,11 @@ export class Museum {
     // Lazy textures
     // -----------------------------------------------------------------------
 
-    addSlot(material, paint, at, { persistent = false, placeholder = PLACEHOLDER, target = null } = {}) {
-        const slot = { material, paint, x: at.x, z: at.z, persistent, placeholder, target, state: 'empty', texture: null, gen: 0 };
-        material.color.set(placeholder);
+    addSlot(material, paint, at, { persistent = false, placeholder = PLACEHOLDER, target = null, decal = false } = {}) {
+        const slot = { material, paint, x: at.x, z: at.z, persistent, placeholder, target, decal, state: 'empty', texture: null, gen: 0 };
+        // A decal (painted lettering) is invisible until its letters arrive.
+        if (decal) material.opacity = 0;
+        else material.color.set(placeholder);
         this.slots.push(slot);
         return slot;
     }
@@ -261,7 +266,12 @@ export class Museum {
         const old = slot.texture;
         slot.texture = tex;
         slot.material.map = tex;
-        slot.material.color.set('#ffffff');
+        if (slot.decal) {
+            slot.material.opacity = 1;
+            if (slot.material.emissiveIntensity > 0) slot.material.emissiveMap = tex;
+        } else {
+            slot.material.color.set('#ffffff');
+        }
         slot.material.needsUpdate = true;
         if (old && old !== tex) old.dispose();
     }
@@ -271,7 +281,12 @@ export class Museum {
         slot.texture?.dispose();
         slot.texture = null;
         slot.material.map = null;
-        slot.material.color.set(slot.placeholder);
+        if (slot.decal) {
+            slot.material.opacity = 0;
+            slot.material.emissiveMap = null;
+        } else {
+            slot.material.color.set(slot.placeholder);
+        }
         slot.material.needsUpdate = true;
         slot.state = 'empty';
     }
@@ -336,14 +351,98 @@ export class Museum {
     }
 
     /**
-     * Hang a framed picture on a wall surface, with its caption plaque above
-     * it, a picture light above that and a pool of light on the wall.
+     * Paint colours for lettering on the wall at (x, z): light on the dark
+     * gallery walls, dark on the pale lobby, hall and contact walls.
+     */
+    wallPalette(x, z, accent) {
+        const paint = roomAt(x, z)?.paint || '#e4dccf';
+        const dark = art.luminance(paint) < 0.3;
+        const base = accent || (dark ? '#e8c27a' : '#8a6630');
+        const pal = dark
+            ? { dark, ink: '#f1eadc', muted: 'rgba(241,234,220,0.74)', accent: art.mixHex(base, '#ffffff', 0.35), rule: 'rgba(241,234,220,0.35)' }
+            : { dark, ink: '#2b2723', muted: 'rgba(43,39,35,0.7)', accent: art.mixHex(base, '#000000', 0.12), rule: 'rgba(43,39,35,0.3)' };
+        pal.text = { painted: true, ink: pal.ink, muted: pal.muted, rule: pal.rule };
+        return pal;
+    }
+
+    /**
+     * Lettering painted on the wall: a transparent plane just off the wall,
+     * lit like the wall (so it takes the same light, shadows and night
+     * dimming) and bumped by the same plaster.
+     */
+    addDecal(group, w, h, y, painter, { persistent = false, glow = 0 } = {}) {
+        // Pale paint on a dark wall catches the picture lamps far more than
+        // the wall does; a little self-light from the letters stands in for it.
+        const mat = new THREE.MeshStandardMaterial({
+            transparent: true, opacity: 0, roughness: 0.62, metalness: 0, depthWrite: false,
+            emissive: glow ? '#ffffff' : '#000000', emissiveIntensity: glow,
+            normalMap: this.decalNormal, normalScale: new THREE.Vector2(0.45, 0.45),
+            polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4
+        });
+        mat.userData.base = new THREE.Color('#ffffff');
+        this.world.themed.paints.push(mat);
+        const geo = new THREE.PlaneGeometry(w, h);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(0, y, 0.004);
+        group.add(mesh);
+        group.updateMatrixWorld(true);
+        const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(group.quaternion);
+        const pos = geo.attributes.position;
+        const uv1 = new Float32Array(pos.count * 2);
+        const v = new THREE.Vector3();
+        for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+            uv1[i * 2] = Math.abs(normal.x) >= Math.abs(normal.z) ? v.z : v.x;
+            uv1[i * 2 + 1] = v.y;
+        }
+        geo.setAttribute('uv1', new THREE.BufferAttribute(uv1, 2));
+        mesh.receiveShadow = true;
+        mesh.userData.noShadow = true;   // a transparent sheet must not cast a box of shadow
+        const wp = new THREE.Vector3();
+        mesh.getWorldPosition(wp);
+        this.addSlot(mat, painter, wp, { persistent, decal: true });
+        return mesh;
+    }
+
+    /**
+     * Text painted straight onto a wall: lettering, wall texts, figures.
+     * `paint(palette)` draws the letters on a transparent canvas.
+     */
+    paintWall(surface, offset, { w, h, y, paint, exhibit, persistent = false, wash = false, lamp, accent, viewDistance }) {
+        const pose = this.surfacePose(surface, offset);
+        const group = new THREE.Group();
+        group.position.set(pose.x, 0, pose.z);
+        group.rotation.y = pose.rotY;
+        this.group.add(group);
+        const pal = this.wallPalette(pose.x, pose.z, accent);
+        const mesh = this.addDecal(group, w, h, y, () => paint(pal), { persistent, glow: pal.dark ? 0.38 : 0 });
+        const top = y + h / 2;
+        if (wash) this.addWash(group, w, h, top);
+        if (lamp ?? wash) {
+            group.updateMatrixWorld(true);
+            this.lamps.push({
+                hood: group.localToWorld(new THREE.Vector3(0, top + 0.2, 0.27)),
+                arm: group.localToWorld(new THREE.Vector3(0, top + 0.2, 0.135)),
+                rotY: pose.rotY, len: clamp(w * 0.45, 0.35, 1.6)
+            });
+        }
+        if (exhibit) {
+            const world = new THREE.Vector3();
+            mesh.getWorldPosition(world);
+            this.register(exhibit, [mesh], { x: world.x, y, z: world.z }, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(w, h), viewDistance);
+        }
+        return group;
+    }
+
+    /**
+     * Hang a framed picture on a wall surface, with its caption painted on
+     * the wall above it, a picture light above that and a pool of light.
      * `offset` is the picture's centre along the wall.
      */
     hang(surface, offset, spec) {
         const {
             w, h, y = 1.7, frame = 'black', paint, label, exhibit, persistent = false, wash = true,
-            placeholder, mat = 0
+            placeholder, mat = 0, viewDistance
         } = spec;
         const lamp = spec.lamp ?? wash;
         const pose = this.surfacePose(surface, offset);
@@ -385,22 +484,16 @@ export class Museum {
         let top = y + innerH / 2 + border;
         let spanW = outerW;
         if (label) {
+            // The caption is sign-written on the wall above the frame.
             const lw = label.w || clamp(outerW, 1.1, 4.2);
             const lh = label.h || (lw >= 2 ? 0.56 : 0.44);
-            const ly = top + (label.gap ?? 0.14) + lh / 2;
-            const face = new THREE.MeshBasicMaterial({ color: '#f6f3ee', toneMapped: false });
-            const edge = this.plaqueEdge;
-            const plaque = new THREE.Mesh(new THREE.BoxGeometry(lw, lh, 0.016), [edge, edge, edge, edge, face, edge]);
-            plaque.position.set(0, ly, 0.012);
-            group.add(plaque);
-            meshes.push(plaque);
-            const lp = new THREE.Vector3();
-            plaque.getWorldPosition(lp);
-            const painter = label.paint || (() => art.paintCaption({
-                eyebrow: label.eyebrow, title: label.title, line: label.line, accent: label.accent,
+            const ly = top + (label.gap ?? 0.1) + lh / 2;
+            const pal = this.wallPalette(pose.x, pose.z, label.accent);
+            const caption = this.addDecal(group, lw, lh, ly, label.paint || (() => art.paintWallCaption({
+                eyebrow: label.eyebrow, title: label.title, line: label.line, ...pal,
                 width: Math.round(lw * CAPTION_PX), height: Math.round(lh * CAPTION_PX)
-            }));
-            this.addSlot(face, painter, lp, { persistent, placeholder: '#f6f3ee' });
+            })), { persistent, glow: pal.dark ? 0.38 : 0 });
+            meshes.push(caption);
             top = ly + lh / 2;
             spanW = Math.max(spanW, lw);
         }
@@ -415,7 +508,7 @@ export class Museum {
 
         if (exhibit) {
             const focus = { x: world.x, y, z: world.z };
-            this.register(exhibit, meshes, focus, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(spanW, top - bottom));
+            this.register(exhibit, meshes, focus, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(spanW, top - bottom), viewDistance);
         }
         return group;
     }
@@ -477,11 +570,6 @@ export class Museum {
         glows.userData.noShadow = true;
     }
 
-    /** A text plaque painted on a canvas, flush on the wall. */
-    plaque(surface, offset, { w, h, y, paint, exhibit, persistent = false, wash = false, frame = 'none', placeholder = '#f4efe6', lamp }) {
-        return this.hang(surface, offset, { w, h, y, paint, exhibit, persistent, wash, frame, placeholder, lamp });
-    }
-
     /**
      * Spread items along a sequence of wall surfaces in order, using about the
      * same share of every wall, then space each wall's items evenly.
@@ -520,11 +608,11 @@ export class Museum {
 
     roomIntro(room, text) {
         const surfaces = gallerySurfaces(room);
-        this.plaque(surfaces.frontRight, 0, {
-            w: 2.7, h: 3.0, y: 2.2, wash: true,
-            paint: () => art.paintTextPanel({
-                width: 900, height: 1000, eyebrow: `Gallery ${room.numeral}`, title: room.title, subtitle: room.tagline,
-                paragraphs: [text], footer: 'Click for the gallery guide', accent: room.accent, titleSize: 92, bodySize: 34, icon: room.icon
+        this.paintWall(surfaces.frontRight, 0, {
+            w: 2.7, h: 3.0, y: 2.2, wash: true, accent: room.accent,
+            paint: (pal) => art.paintTextPanel({
+                ...pal.text, width: 900, height: 1000, eyebrow: `Gallery ${room.numeral}`, title: room.title, subtitle: room.tagline,
+                paragraphs: [text], footer: 'Click for the gallery guide', accent: pal.accent, titleSize: 92, bodySize: 34, icon: room.icon
             }),
             exhibit: { id: `room-${room.id}`, room: room.id, kind: 'room', title: `${room.title}: gallery guide`, subtitle: room.tagline, payload: room, icon: room.icon, catalogue: false }
         });
@@ -612,9 +700,9 @@ export class Museum {
 
         // West wall: name above the entrance and the About Me texts.
         const west = { x: -52 + f, z: 0, nx: 1, nz: 0, length: 32 };
-        this.plaque(west, 0, {
-            w: 12, h: 2.2, y: 5.85, persistent: true, placeholder: room.paint,
-            paint: () => art.paintLettering({ text: profile.name.toUpperCase(), sub: profile.tagline, width: 2400, height: 440, background: room.paint, color: '#2a2622' })
+        this.paintWall(west, 0, {
+            w: 12, h: 2.2, y: 5.85, persistent: true,
+            paint: (pal) => art.paintLettering({ text: profile.name.toUpperCase(), sub: profile.tagline, width: 2400, height: 440, color: pal.ink, subColor: pal.accent })
         });
         const about = profile.about || [];
         const aboutPanels = [
@@ -622,11 +710,11 @@ export class Museum {
             { offset: 9.5, paragraphs: about.slice(1), title: 'Research' }
         ];
         aboutPanels.forEach((panel, i) => {
-            this.plaque(west, panel.offset, {
+            this.paintWall(west, panel.offset, {
                 w: 7.2, h: 4.0, y: 2.7, persistent: true, wash: true,
-                paint: () => art.paintTextPanel({
-                    width: 1600, height: 890, eyebrow: i === 0 ? 'Welcome' : 'About me, continued', title: panel.title,
-                    paragraphs: panel.paragraphs, accent: GOLD_ACCENT, titleSize: 76, bodySize: 33, footer: 'Click to read'
+                paint: (pal) => art.paintTextPanel({
+                    ...pal.text, width: 1600, height: 890, eyebrow: i === 0 ? 'Welcome' : 'About me, continued', title: panel.title,
+                    paragraphs: panel.paragraphs, accent: pal.accent, titleSize: 76, bodySize: 33, footer: 'Click to read'
                 }),
                 exhibit: { id: i === 0 ? 'about' : 'about-2', room: 'home', kind: 'about', title: 'About me', subtitle: 'Biography and research focus', payload: profile, icon: 'fas fa-id-card', catalogue: i === 0 }
             });
@@ -634,9 +722,9 @@ export class Museum {
 
         // North wall: research interests, each captioned above.
         const north = { x: -36, z: -16 + f, nx: 0, nz: 1, length: 32 };
-        this.plaque(north, 0, {
-            w: 9, h: 1.0, y: 5.75, persistent: true, placeholder: room.paint,
-            paint: () => art.paintLettering({ text: 'RESEARCH INTERESTS', width: 1800, height: 200, background: room.paint, color: '#2a2622', size: 120 })
+        this.paintWall(north, 0, {
+            w: 9, h: 1.0, y: 5.75, persistent: true,
+            paint: (pal) => art.paintLettering({ text: 'RESEARCH INTERESTS', width: 1800, height: 200, color: pal.ink, subColor: pal.accent, size: 120 })
         });
         const interests = profile.researchInterests || [];
         const spacing = Math.min(3.7, 30 / Math.max(interests.length, 1));
@@ -653,9 +741,9 @@ export class Museum {
 
         // South wall: the news screen, flanked by the four latest highlights.
         const south = { x: -36, z: 16 - f, nx: 0, nz: -1, length: 32 };
-        this.plaque(south, 0, {
-            w: 7, h: 1.0, y: 5.75, persistent: true, placeholder: room.paint,
-            paint: () => art.paintLettering({ text: 'NEWS & HIGHLIGHTS', width: 1400, height: 200, background: room.paint, color: '#2a2622', size: 120 })
+        this.paintWall(south, 0, {
+            w: 7, h: 1.0, y: 5.75, persistent: true,
+            paint: (pal) => art.paintLettering({ text: 'NEWS & HIGHLIGHTS', width: 1400, height: 200, color: pal.ink, subColor: pal.accent, size: 120 })
         });
         this.buildNewsTV(south, 0, 6.0, 2.85);
         const offsets = [-6.9, 6.9, -12.6, 12.6].slice(0, highlights.length).sort((a, b) => a - b);
@@ -672,19 +760,19 @@ export class Museum {
 
         // East wall: Scholar metrics and the museum directory.
         const east = { x: -20 - f, z: 0, nx: -1, nz: 0, length: 32 };
-        this.plaque(east, -11, {
-            w: 5.4, h: 3.42, y: 2.6, persistent: true, wash: true,
-            paint: () => art.paintScholar(scholar, this.data.pubStats),
+        this.paintWall(east, -11, {
+            w: 5.4, h: 3.42, y: 2.6, persistent: true, wash: true, viewDistance: 4.4,
+            paint: (pal) => art.paintScholar(scholar, this.data.pubStats, pal),
             exhibit: { id: 'scholar', room: 'home', kind: 'scholar', title: 'Google Scholar metrics', subtitle: scholar ? `${scholar.citations} citations · h-index ${scholar.hIndex} · i10-index ${scholar.i10Index}` : 'Citation metrics', payload: scholar, icon: 'fas fa-graduation-cap' }
         });
-        this.plaque(east, 11, {
-            w: 5.4, h: 2.93, y: 2.6, persistent: true, wash: true,
+        this.hang(east, 11, {
+            w: 5.2, h: 2.82, y: 2.6, frame: 'oak', persistent: true, viewDistance: 4.4,
             paint: () => art.paintFloorPlan(ROOMS.filter((r) => r.id !== 'hall').concat(ROOM_BY_ID.hall), { highlight: 'home' }),
             exhibit: { id: 'directory', room: 'home', kind: 'directory', title: 'Museum directory', subtitle: 'Floor plan and gallery guide', payload: null, icon: 'fas fa-map' }
         });
-        this.plaque(east, 0, {
-            w: 5.6, h: 1.2, y: 6.0, persistent: true, placeholder: room.paint,
-            paint: () => art.paintLettering({ text: 'GRAND HALL', sub: 'Galleries I – VIII · Contact', width: 1400, height: 300, background: room.paint, color: '#2a2622', size: 110 })
+        this.paintWall(east, 0, {
+            w: 5.6, h: 1.2, y: 6.0, persistent: true,
+            paint: (pal) => art.paintLettering({ text: 'GRAND HALL', sub: 'Galleries I – VIII · Contact', width: 1400, height: 300, color: pal.ink, subColor: pal.accent, size: 110 })
         });
     }
 
@@ -916,16 +1004,16 @@ export class Museum {
             }
         }));
         this.distribute(items, segments, 1.0);
-        this.plaque({ x: -16.6, z: -8 + f, nx: 0, nz: 1, length: 4 }, 0, {
-            w: 3.4, h: 0.9, y: 6.0, persistent: true, placeholder: ROOM_BY_ID.hall.paint,
-            paint: () => art.paintLettering({ text: 'NEWS', sub: 'Milestones, newest first', width: 1000, height: 260, background: ROOM_BY_ID.hall.paint, color: '#2a2622', size: 120 })
+        this.paintWall({ x: -16.6, z: -8 + f, nx: 0, nz: 1, length: 4 }, 0, {
+            w: 3.4, h: 0.9, y: 6.0, persistent: true,
+            paint: (pal) => art.paintLettering({ text: 'NEWS', sub: 'Milestones, newest first', width: 1000, height: 260, color: pal.ink, subColor: pal.accent, size: 120 })
         });
 
         // South wall, centre: most-cited works from Google Scholar.
         if (scholar?.papers?.length) {
-            this.plaque({ x: 16, z: 8 - f, nx: 0, nz: -1, length: 14 }, 0, {
+            this.paintWall({ x: 16, z: 8 - f, nx: 0, nz: -1, length: 14 }, 0, {
                 w: 6.2, h: 3.99, y: 2.5, persistent: true, wash: true,
-                paint: () => art.paintCitations(scholar),
+                paint: (pal) => art.paintCitations(scholar, pal),
                 exhibit: { id: 'citations', room: 'hall', kind: 'scholar', title: 'Most cited works', subtitle: 'Google Scholar citations per paper', payload: scholar, icon: 'fas fa-chart-bar' }
             });
         }
@@ -1177,9 +1265,9 @@ export class Museum {
         // Category sign on the wall behind.
         const signPose = this.surfacePose(surface, offset);
         const sign = { x: signPose.x, z: signPose.z, nx: surface.nx, nz: surface.nz };
-        this.plaque(sign, 0, {
-            w: Math.max(width, 1.6), h: 0.8, y: 3.75,
-            paint: () => art.paintTextPanel({ width: Math.round(Math.max(width, 1.6) * 400), height: 320, title: cat.title, icon: null, eyebrow: `${skills.length} skills`, accent: color, titleSize: 96, bodySize: 40, padding: 0.12, align: 'center', border: false }),
+        this.paintWall(sign, 0, {
+            w: Math.max(width, 1.6), h: 0.8, y: 3.75, accent: color,
+            paint: (pal) => art.paintTextPanel({ ...pal.text, width: Math.round(Math.max(width, 1.6) * 400), height: 320, title: cat.title, icon: null, eyebrow: `${skills.length} skills`, accent: pal.accent, titleSize: 96, bodySize: 40, padding: 0.12, align: 'center', border: false }),
             exhibit: { id: catExhibitId, room: room.id, kind: 'skillCategory', title: cat.title, subtitle: `${skills.length} skills`, payload: { category: cat, color }, icon: cat.icon }
         });
         const c = new THREE.Vector3();
@@ -1322,12 +1410,12 @@ export class Museum {
         this.roomIntro(room, `Peer review for ${venues} journals and conferences, seminars, and a hologram of ${coauthors} co-authors: as a network, or on a globe you can spin.`);
 
         // Back wall: editorial and review roles.
-        this.plaque(s.back, 0, {
-            w: 8.4, h: 3.6, y: 2.4, wash: true,
-            paint: () => art.paintTextPanel({
-                width: 1800, height: 771, eyebrow: 'Editorial & review activities', title: 'Peer review',
+        this.paintWall(s.back, 0, {
+            w: 8.4, h: 3.6, y: 2.4, wash: true, accent: room.accent,
+            paint: (pal) => art.paintTextPanel({
+                ...pal.text, width: 1800, height: 771, eyebrow: 'Editorial & review activities', title: 'Peer review',
                 sections: reviewing.map((g) => ({ heading: g.publisher, lines: (g.roles || []).map((r) => `${r.venue} · ${r.role}`) })),
-                accent: room.accent, titleSize: 70, bodySize: 30
+                accent: pal.accent, titleSize: 70, bodySize: 30
             }),
             exhibit: { id: 'reviewing', room: room.id, kind: 'reviewing', title: 'Editorial & review activities', subtitle: `${venues} venues`, payload: reviewing, icon: 'fas fa-pen-nib' }
         });
@@ -1349,15 +1437,15 @@ export class Museum {
 
         // Right wall: who the collaborators are.
         if (collaborations) {
-            this.plaque(s.right, 0, {
-                w: 6.4, h: 3.6, y: 2.4, wash: true,
-                paint: () => art.paintTextPanel({
-                    width: 1600, height: 900, eyebrow: 'Collaborations / network', title: 'Co-authors',
+            this.paintWall(s.right, 0, {
+                w: 6.4, h: 3.6, y: 2.4, wash: true, accent: room.accent,
+                paint: (pal) => art.paintTextPanel({
+                    ...pal.text, width: 1600, height: 900, eyebrow: 'Collaborations / network', title: 'Co-authors',
                     sections: [
                         { heading: 'By country', lines: (collaborations.byCountry || []).map((c) => `${c.name}: ${c.authors} co-authors, ${c.papers} papers`) },
                         { heading: 'By organization', lines: (collaborations.byUniversity || []).map((u) => `${u.name}: ${u.papers} papers, ${u.authors} co-authors`) }
                     ],
-                    footer: 'Click to explore the network', accent: room.accent, titleSize: 68, bodySize: 30
+                    footer: 'Click to explore the network', accent: pal.accent, titleSize: 68, bodySize: 30
                 }),
                 exhibit: { id: 'collab-panel', room: room.id, kind: 'collab', title: 'Collaborations / network', subtitle: `${coauthors} co-authors in ${(collaborations.byCountry || []).length} countries`, payload: null, icon: 'fas fa-project-diagram' }
             });
@@ -1963,12 +2051,12 @@ export class Museum {
 
         // East wall: the invitation to get in touch.
         const east = { x: 68 - f, z: 0, nx: -1, nz: 0, length: 20 };
-        this.plaque(east, 0, {
-            w: 8, h: 4.2, y: 3.0, persistent: true, wash: true,
-            paint: () => art.paintTextPanel({
-                width: 1700, height: 892, eyebrow: 'Contact information', title: 'Let’s collaborate',
+        this.paintWall(east, 0, {
+            w: 8, h: 4.2, y: 3.0, persistent: true, wash: true, accent: room.accent,
+            paint: (pal) => art.paintTextPanel({
+                ...pal.text, width: 1700, height: 892, eyebrow: 'Contact information', title: 'Let’s collaborate',
                 paragraphs: [contact.lead, `${contact.emailLabel}: ${contact.email} (${contact.emailNote})`],
-                footer: 'Click to write an email or copy the address', accent: room.accent, titleSize: 84, bodySize: 36
+                footer: 'Click to write an email or copy the address', accent: pal.accent, titleSize: 84, bodySize: 36
             }),
             exhibit: { id: 'contact-wall', room: 'contact', kind: 'contact', title: 'Let’s collaborate', subtitle: contact.email, payload: contact, catalogue: false }
         });
@@ -1987,9 +2075,9 @@ export class Museum {
         const south = { x: 60, z: 10 - f, nx: 0, nz: -1, length: 16 };
         const tiles = [...(profile.social || []), { label: 'Visitors', icon: 'fas fa-flag', color: '#7c2d12', visitors: true }];
         const step = Math.min(1.75, 14 / tiles.length);
-        this.plaque(south, 0, {
-            w: 6, h: 0.9, y: 4.4, persistent: true, placeholder: room.paint,
-            paint: () => art.paintLettering({ text: 'FIND ME ONLINE', width: 1600, height: 240, background: room.paint, color: '#2a2622', size: 110 })
+        this.paintWall(south, 0, {
+            w: 6, h: 0.9, y: 4.4, persistent: true,
+            paint: (pal) => art.paintLettering({ text: 'FIND ME ONLINE', width: 1600, height: 240, color: pal.ink, subColor: pal.accent, size: 110 })
         });
         tiles.forEach((social, i) => {
             const offset = (i - (tiles.length - 1) / 2) * step;

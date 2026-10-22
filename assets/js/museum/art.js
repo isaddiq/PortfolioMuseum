@@ -215,18 +215,23 @@ function drawLaid(ctx, laid, x, y, width, align = 'left') {
 /**
  * A wall panel of text: eyebrow, title, paragraphs, bullets and a footer.
  * Sizes are in canvas pixels; everything shrinks together to fit.
+ * With `painted`, there is no card: the letters alone, on a transparent
+ * canvas, weathered a little, to be laid on the wall as paint.
  */
 export function paintTextPanel(opts) {
     const {
         width = 1200, height = 800, padding = 0.07, background = PAPER, ink = INK, muted = MUTED,
         accent = GOLD, eyebrow, title, subtitle, paragraphs = [], bullets = [], sections = [], footer,
-        align = 'left', icon, border = true, titleSize = 64, bodySize = 30
+        align = 'left', icon, border = true, titleSize = 64, bodySize = 30, painted = false,
+        rule = hexToRgba('#000000', 0.18)
     } = opts;
     const canvas = makeCanvas(width, height);
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, width, height);
-    if (border) {
+    if (!painted) {
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, width, height);
+    }
+    if (border && !painted) {
         ctx.strokeStyle = hexToRgba(accent.startsWith('#') ? accent : '#b08d57', 0.55);
         ctx.lineWidth = Math.max(2, width * 0.003);
         const inset = width * 0.018;
@@ -238,7 +243,7 @@ export function paintTextPanel(opts) {
     if (eyebrow) blocks.push({ text: eyebrow, size: bodySize * 0.72, weight: 700, color: accent, upper: true, spacing: 4, after: bodySize * 0.6 });
     if (title) blocks.push({ text: title, size: titleSize, weight: 600, family: SERIF, color: ink, lineHeight: 1.12, after: titleSize * 0.35 });
     if (subtitle) blocks.push({ text: subtitle, size: bodySize * 1.02, italic: true, family: SERIF, color: muted, after: bodySize * 0.8 });
-    if (title || subtitle) blocks.push({ rule: bodySize * 1.1, color: hexToRgba('#000000', 0.18), width: width * 0.18 });
+    if (title || subtitle) blocks.push({ rule: bodySize * 1.1, color: rule, width: width * 0.18 });
     for (const p of paragraphs) blocks.push({ text: p, size: bodySize, color: ink, lineHeight: 1.5, after: bodySize * 0.75 });
     for (const section of sections) {
         if (section.heading) blocks.push({ text: section.heading, size: bodySize * 0.74, weight: 700, color: accent, upper: true, spacing: 3, after: bodySize * 0.35 });
@@ -258,6 +263,71 @@ export function paintTextPanel(opts) {
         const fFit = measureBlocks(ctx, footerBlocks, width - pad * 2, 1);
         drawLaid(ctx, fFit.laid, pad, height - pad - footerH * 0.7, width - pad * 2, align);
     }
+    if (painted) weather(ctx, width, height, hashString(String(title || eyebrow || '')));
+    return canvas;
+}
+
+/**
+ * Hand-applied paint is never perfect: knock tiny flecks out of the letters
+ * and thin the coverage in places, so they read as paint, not print.
+ */
+export function weather(ctx, width, height, seed = 7) {
+    const rand = seededRandom(seed);
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    const flecks = Math.round((width * height) / 700);
+    for (let i = 0; i < flecks; i++) {
+        ctx.fillStyle = `rgba(0,0,0,${0.12 + rand() * 0.3})`;
+        const r = 0.5 + rand() * 1.6;
+        ctx.fillRect(rand() * width, rand() * height, r, r * (0.6 + rand()));
+    }
+    // Broad, faint patches where the brush carried less paint.
+    for (let i = 0; i < 14; i++) {
+        const x = rand() * width;
+        const y = rand() * height;
+        const r = Math.min(width, height) * (0.08 + rand() * 0.2);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(0,0,0,0.12)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    ctx.restore();
+}
+
+/** Mix two hex colours (t = 0 gives a, 1 gives b). */
+export function mixHex(a, b, t) {
+    const pa = parseInt(a.replace('#', ''), 16);
+    const pb = parseInt(b.replace('#', ''), 16);
+    const ch = (n, k) => (n >> k) & 255;
+    const m = (k) => Math.round(ch(pa, k) + (ch(pb, k) - ch(pa, k)) * t);
+    return `#${((m(16) << 16) | (m(8) << 8) | m(0)).toString(16).padStart(6, '0')}`;
+}
+
+/** Relative luminance of a hex colour, 0..1. */
+export function luminance(hex) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    const lin = (v) => {
+        const c = v / 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+
+/** A caption painted straight onto the wall above a work. */
+export function paintWallCaption({ eyebrow, title, line, ink = INK, muted = MUTED, accent = GOLD, width = 1200, height = 300 }) {
+    const canvas = makeCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    const H = height;
+    const blocks = [];
+    if (eyebrow) blocks.push({ text: eyebrow, size: H * 0.12, weight: 700, color: accent, upper: true, spacing: H * 0.014, maxLines: 1, after: H * 0.05 });
+    blocks.push({ text: title, size: H * 0.26, weight: 600, family: SERIF, color: ink, lineHeight: 1.08, maxLines: 2, after: H * 0.045 });
+    if (line) blocks.push({ text: line, size: H * 0.13, italic: true, family: SERIF, color: muted, maxLines: 2, lineHeight: 1.25, after: 0 });
+    const padX = width * 0.02;
+    const fit = fitBlocks(ctx, blocks, width - padX * 2, H * 0.94, 0.45);
+    // Sit the text on a baseline just above the frame, as a sign-writer would.
+    drawLaid(ctx, fit.laid, padX, Math.max(0, H - fit.height - H * 0.02), width - padX * 2, 'center');
+    weather(ctx, width, height, hashString(String(title)));
     return canvas;
 }
 
@@ -739,25 +809,34 @@ export function paintMedalFace(award) {
     return canvas;
 }
 
-export function paintScholar(scholar, pubStats) {
+/**
+ * Scholar metrics. Pass a wall palette ({ ink, muted, accent }) to paint the
+ * figures straight onto the wall; without one it is a dark board.
+ */
+export function paintScholar(scholar, pubStats, pal = null) {
     const W = 1200;
     const H = 760;
     const canvas = makeCanvas(W, H);
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#16181d';
-    ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(176,141,87,0.6)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(22, 22, W - 44, H - 44);
-    drawGlyph(ctx, 'fas fa-graduation-cap', 110, 118, 54, '#8ab4f8');
-    ctx.fillStyle = '#f4efe6';
+    const ink = pal?.ink || '#f4efe6';
+    const muted = pal?.muted || '#b8b0a3';
+    const accent = pal?.accent || '#e8c27a';
+    if (!pal) {
+        ctx.fillStyle = '#16181d';
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(176,141,87,0.6)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(22, 22, W - 44, H - 44);
+    }
+    drawGlyph(ctx, 'fas fa-graduation-cap', 110, 118, 54, pal ? accent : '#8ab4f8');
+    ctx.fillStyle = ink;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.font = `600 56px ${SERIF}`;
     ctx.fillText('Google Scholar', 160, 118);
     ctx.font = `600 20px ${SANS}`;
     setSpacing(ctx, 3);
-    ctx.fillStyle = '#b8b0a3';
+    ctx.fillStyle = muted;
     ctx.fillText('CITATION METRICS', 162, 166);
     setSpacing(ctx, 0);
     const stats = [
@@ -768,46 +847,51 @@ export function paintScholar(scholar, pubStats) {
     stats.forEach(([label, value], i) => {
         const cx = 200 + i * 400;
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#e8c27a';
+        ctx.fillStyle = accent;
         ctx.font = `600 150px ${SERIF}`;
         ctx.fillText(value == null ? '–' : Number(value).toLocaleString(), cx, 360);
-        ctx.fillStyle = '#d9d2c5';
+        ctx.fillStyle = ink;
         ctx.font = `600 24px ${SANS}`;
         setSpacing(ctx, 3);
         ctx.fillText(label.toUpperCase(), cx, 470);
         setSpacing(ctx, 0);
     });
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillStyle = pal ? muted : 'rgba(255,255,255,0.12)';
     ctx.fillRect(80, 540, W - 160, 2);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#d9d2c5';
+    ctx.fillStyle = ink;
     ctx.font = `italic 30px ${SERIF}`;
     if (pubStats) {
         ctx.fillText(`${pubStats.total} publications · cumulative journal impact factor ${pubStats.cumulativeIF}`, W / 2, 600);
     }
     ctx.font = `500 20px ${SANS}`;
-    ctx.fillStyle = '#9b9488';
+    ctx.fillStyle = muted;
     ctx.fillText(scholar?.updated ? `Refreshed automatically · last update ${scholar.updated}` : 'Refreshed automatically from the live profile', W / 2, 660);
+    if (pal) weather(ctx, W, H, 3);
     return canvas;
 }
 
-export function paintCitations(scholar) {
+/** Citations per paper as bars; a wall palette paints it onto the wall. */
+export function paintCitations(scholar, pal = null) {
     const W = 1400;
     const H = 900;
     const canvas = makeCanvas(W, H);
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#f7f3ec';
-    ctx.fillRect(0, 0, W, H);
+    const INK_ = pal?.ink || INK;
+    if (!pal) {
+        ctx.fillStyle = '#f7f3ec';
+        ctx.fillRect(0, 0, W, H);
+    }
     const pad = 70;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     ctx.font = `700 22px ${SANS}`;
     setSpacing(ctx, 4);
-    ctx.fillStyle = GOLD;
+    ctx.fillStyle = pal?.accent || GOLD;
     ctx.fillText('GOOGLE SCHOLAR', pad, pad + 10);
     setSpacing(ctx, 0);
     ctx.font = `600 60px ${SERIF}`;
-    ctx.fillStyle = INK;
+    ctx.fillStyle = INK_;
     ctx.fillText('Most cited works', pad, pad + 80);
     const papers = (scholar?.papers || []).slice(0, 8);
     const max = Math.max(1, ...papers.map((p) => p.citations || 0));
@@ -815,18 +899,19 @@ export function paintCitations(scholar) {
     papers.forEach((paper, i) => {
         const y = pad + 130 + i * rowH;
         ctx.font = `500 23px ${SANS}`;
-        ctx.fillStyle = INK;
+        ctx.fillStyle = INK_;
         const title = clampLines(ctx, wrapText(ctx, paper.title, W - pad * 2 - 140), 1, W - pad * 2 - 140)[0];
         ctx.fillText(title, pad, y + 26);
         const bw = ((W - pad * 2 - 140) * (paper.citations || 0)) / max;
         ctx.fillStyle = i === 0 ? '#c2410c' : '#b08d57';
         ctx.fillRect(pad, y + 38, Math.max(6, bw), rowH * 0.28);
         ctx.font = `600 34px ${SERIF}`;
-        ctx.fillStyle = INK;
+        ctx.fillStyle = INK_;
         ctx.textAlign = 'right';
         ctx.fillText(String(paper.citations), W - pad, y + 58);
         ctx.textAlign = 'left';
     });
+    if (pal) weather(ctx, W, H, 5);
     return canvas;
 }
 
@@ -1053,6 +1138,7 @@ export function paintLettering({ text, sub, width = 2400, height = 500, color = 
         ctx.fillText(sub.toUpperCase(), width / 2, height * 0.86);
         setSpacing(ctx, 0);
     }
+    if (!background) weather(ctx, width, height, hashString(text));
     return canvas;
 }
 
@@ -1113,38 +1199,6 @@ export function downscale(img, maxEdge) {
 // ---------------------------------------------------------------------------
 // Captions, screens and holograms
 // ---------------------------------------------------------------------------
-
-/**
- * The engraved caption plaque hung above a work: eyebrow, title and one
- * line, centred. Sizes follow the plaque's height so any width works.
- */
-export function paintCaption({ eyebrow, title, line, accent = GOLD, width = 1200, height = 300 }) {
-    const canvas = makeCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-    const H = height;
-    ctx.fillStyle = '#f8f5ef';
-    ctx.fillRect(0, 0, width, height);
-    const sheen = ctx.createLinearGradient(0, 0, 0, height);
-    sheen.addColorStop(0, 'rgba(255,255,255,0.5)');
-    sheen.addColorStop(1, 'rgba(120,100,70,0.08)');
-    ctx.fillStyle = sheen;
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = accent;
-    ctx.fillRect(0, 0, width, Math.max(3, H * 0.035));
-    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(1, 1, width - 2, height - 2);
-    const padX = Math.min(H * 0.22, width * 0.05);
-    const top = H * 0.1;
-    const boxH = H - top - H * 0.07;
-    const blocks = [];
-    if (eyebrow) blocks.push({ text: eyebrow, size: H * 0.115, weight: 700, color: accent, upper: true, spacing: H * 0.012, maxLines: 1, after: H * 0.045 });
-    blocks.push({ text: title, size: H * 0.24, weight: 600, family: SERIF, color: INK, lineHeight: 1.1, maxLines: 2, after: H * 0.04 });
-    if (line) blocks.push({ text: line, size: H * 0.125, color: MUTED, maxLines: 2, lineHeight: 1.3, after: 0 });
-    const fit = fitBlocks(ctx, blocks, width - padX * 2, boxH, 0.45);
-    drawLaid(ctx, fit.laid, padX, top + Math.max(0, (boxH - fit.height) / 2), width - padX * 2, 'center');
-    return canvas;
-}
 
 /** A plain wood grain, used for frames, bench tops and the desk. */
 export function paintWoodGrain(base = '#7a5634') {

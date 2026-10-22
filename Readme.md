@@ -15,7 +15,11 @@ The academic portfolio of Saddiq Ur Rehman, a researcher in Building Information
 - **Activities' hologram projector**: the co-authors as a turning **network** with sparks running along its links, or as a **holographic globe** of glowing land with a marker on each partner country, arcs from Korea, and cards beside it listing the co-authors there. The globe turns on its own; drag it to spin and tilt it. Switch with the HUD control (click Network, World map, or the Hologram label to flip), the console beside the dais, the collaboration panel or `V`
 - **Contact**: information desk, location map, profiles and the visitor counter
 
-Every work has its caption above it. The **catalogue** button lists every work as text (the accessible view).
+Every work has its caption sign-written on the wall above it, and wall texts, gallery introductions and the big lettering are painted straight onto the plaster: they take the wall's light, shadows and texture, with a little wear in the paint.
+
+**Visitors**: ten realistic people (businesswomen and businessmen, and visitors in everyday clothes) wander the galleries with motion-captured walks, stop a few steps back from works, look around, and raise a camera to take photos, flash and all. They walk around furniture and through the doors, give way to you and to each other, and only those near you are animated.
+
+The **catalogue** button lists every work as text (the accessible view), and the **Classic site** button in the top bar opens the page-based portfolio at [isaddiq.github.io](https://isaddiq.github.io).
 
 **Controls:** drag with the left or right mouse button to look around, standing still or walking; `W` `A` `S` `D` or the arrow keys to walk (`Shift` to hurry); scroll to step; click the floor to walk there; `1`–`0` jump to a room, `M` map, `C` catalogue, `H` help, `Esc` closes panels. Touch screens get a joystick; a finger drag looks around. The sun/moon button switches between day and night lighting, and the sparkle button switches graphics between **high** (shadows, bloom, sharper textures) and **fast** (for phones and small GPUs; the default there). Gallery links such as `#publications` (and the old `#software`) still work.
 
@@ -44,12 +48,13 @@ Every work has its caption above it. The **catalogue** button lists every work a
 |-- scripts/
 |   |-- update-scholar.mjs        # Reads the live Scholar profile, rewrites scholar.json
 |   |-- build-museum-textures.py  # Gallery-sized copies of every image
-|   `-- build-world-map.py        # Rasterises Natural Earth land into world-dots.json
+|   |-- build-world-map.py        # Rasterises Natural Earth land into world-dots.json
+|   `-- build-visitors.py         # The visitors (Rocketbox people) and their motion clips
 |-- assets/
 |   |-- css/museum.css      # HUD, panels, catalogue and loader
 |   |-- js/museum/          # world (building, lights), exhibits, art (canvas painters),
-|   |                       # controls, panels, post (bloom pipeline), data, main
-|   |-- museum/             # Generated gallery copies + textures/ (Poly Haven surfaces)
+|   |                       # controls, panels, post (bloom pipeline), visitors, data, main
+|   |-- museum/             # Generated gallery copies, textures/ (Poly Haven surfaces), people/ (visitors)
 |   |-- images/             # Originals: certificates, covers, news, profile, projects, venues, ...
 |   |-- icons/, logos/      # Skill, social and organisation logos
 `-- Readme.md
@@ -66,6 +71,7 @@ The museum re-hangs itself from the JSON files; walls make room for new items au
 - **`data/profile.json`, `projects.json`, `experience.json`, `skills.json`, `certificates.json`, `seminars.json`, `software.json`**: the rest of the portfolio.
 - **`data/scholar.json`**: **do not edit by hand**; the workflow below rewrites it.
 - **Images**: after adding or replacing one, run `python scripts/build-museum-textures.py` (needs Pillow). It writes web-sized copies (long edge 2048 px) to `assets/museum/` and their sizes to `data/museum-textures.json`. An image without a copy still shows; the museum falls back to the original.
+- **Visitors**: `python scripts/build-visitors.py path/to/FBX2glTF` re-downloads and converts the cast listed at the top of the script (needs [FBX2glTF](https://github.com/facebookincubator/FBX2glTF/releases) and Pillow). Change `AVATARS` there to pick other Rocketbox people.
 
 ### Google Scholar Metrics (automated)
 
@@ -109,6 +115,7 @@ Any current browser with WebGL 2: Chrome, Edge, Firefox and Safari (desktop and 
 - Surface textures: [Poly Haven](https://polyhaven.com) (CC0)
 - World map outlines: [Natural Earth](https://www.naturalearthdata.com) via [world-atlas](https://github.com/topojson/world-atlas) (public domain)
 - Journal covers belong to their publishers and are shown to identify where the papers appeared
+- Visitors: people and motion-captured animations from the [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) avatar library (MIT licence), converted with [FBX2glTF](https://github.com/facebookincubator/FBX2glTF)
 - 3D engine: [three.js](https://threejs.org)
 
 ## 📞 Contact

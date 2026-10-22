@@ -372,6 +372,34 @@ a {
   display: none;
 }
 
+.icon-btn.classic-btn {
+  display: inline-flex;
+  gap: 8px;
+  width: auto;
+  padding: 0 15px 0 13px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.icon-btn.classic-btn i {
+  color: var(--gold);
+}
+
+@media (max-width: 1720px) {
+  .icon-btn.classic-btn {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .icon-btn.classic-btn span {
+    display: none;
+  }
+}
+
 .theme-btn .theme-night,
 :root[data-theme="dark"] .theme-btn .theme-day {
   display: none;
@@ -381,7 +409,7 @@ a {
   display: inline;
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1580px) {
   .room-nav .nav-btn span {
     display: none;
   }
