@@ -1,10 +1,10 @@
 {
-  "citations": 141,
+  "citations": 142,
   "hIndex": 6,
-  "i10Index": 4,
+  "i10Index": 5,
   "scholarId": "wMH9sSgAAAAJ",
   "profileUrl": "https://scholar.google.com/citations?user=wMH9sSgAAAAJ&hl=en",
-  "updated": "2026-10-18",
+  "updated": "2026-10-23",
   "papers": [
     {
       "title": "Advancing BIM and game engine integration in the AEC industry: Innovations, challenges, and future directions",
@@ -28,7 +28,7 @@
     },
     {
       "title": "Semantic-enriched framework for asynchronous bidirectional BIM data exchange with immersive visualization platform",
-      "citations": 9,
+      "citations": 10,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=16989541369909133627"
     },
     {
