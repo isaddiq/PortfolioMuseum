@@ -1,10 +1,10 @@
 {
-  "citations": 143,
+  "citations": 144,
   "hIndex": 6,
   "i10Index": 5,
   "scholarId": "wMH9sSgAAAAJ",
   "profileUrl": "https://scholar.google.com/citations?user=wMH9sSgAAAAJ&hl=en",
-  "updated": "2026-10-27",
+  "updated": "2026-11-01",
   "papers": [
     {
       "title": "Advancing BIM and game engine integration in the AEC industry: Innovations, challenges, and future directions",
@@ -33,7 +33,7 @@
     },
     {
       "title": "Transformer-based framework for mapping client requirements to BIM",
-      "citations": 7,
+      "citations": 8,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=385118629445390655"
     },
     {
