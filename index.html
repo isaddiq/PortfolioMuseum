@@ -57,8 +57,8 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
-    <!-- Flag Counter's server is slow, so its image is requested first thing;
-         by the time the flag icon is clicked it is usually already here -->
+    <!-- Flag Counter's server is slow, so its image (which counts the visit)
+         is requested first thing -->
     <link rel="preconnect" href="https://s01.flagcounter.com" />
     <link
       rel="preload"
@@ -488,12 +488,11 @@
       <a href="https://orcid.org/0000-0002-8098-0939" class="social-icon orcid" target="_blank" title="ORCID" rel="noopener me"><i class="fab fa-orcid"></i></a>
       <a href="https://www.researchgate.net/profile/Saddiq-Ur-Rehman?ev=hdr_xprf" class="social-icon researchgate" target="_blank" title="ResearchGate" rel="noopener me"><i class="fab fa-researchgate"></i></a>
       <a href="https://www.scopus.com/authid/detail.uri?authorId=57203204041" class="social-icon scopus" target="_blank" title="Scopus" rel="noopener me"><span class="scopus-letter">SC</span></a>
-      <a href="https://info.flagcounter.com/2Olz" class="social-icon flag-counter-icon" target="_blank" rel="noopener" title="Show visitors" aria-controls="flag-counter-popup" aria-expanded="false"><i class="fas fa-flag"></i></a>
     </div>
 
-    <!-- Flag Counter: the image (preloaded in <head>) loads with the page, so
-         every visit is counted whether or not the popup is opened. -->
-    <div id="flag-counter-popup" class="flag-counter-popup">
+    <!-- Flag Counter: the image (preloaded in <head>) loads with every page
+         visit, which is what counts the visit. It is kept out of sight. -->
+    <div id="flag-counter-popup" class="flag-counter-popup" aria-hidden="true">
       <a href="https://info.flagcounter.com/2Olz" target="_blank" rel="noopener"
         ><img
           src="https://s01.flagcounter.com/count2/2Olz/bg_FFFFFF/txt_000000/border_CCCCCC/columns_6/maxflags_20/viewers_3/labels_0/pageviews_0/flags_0/percent_0/"

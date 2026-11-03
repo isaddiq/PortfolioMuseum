@@ -929,7 +929,6 @@ kbd {
 .social-icon.orcid:hover { background: #a6ce39; }
 .social-icon.researchgate:hover { background: #00ccbb; }
 .social-icon.scopus:hover { background: #e9711c; }
-.social-icon.flag-counter-icon:hover { background: #7c2d12; }
 
 .scopus-letter {
   font-weight: 800;
@@ -937,48 +936,19 @@ kbd {
   letter-spacing: 0.02em;
 }
 
+/* Flag Counter: loaded on every visit so the visit is counted, never shown. */
 .flag-counter-popup {
-  position: fixed;
-  left: 64px;
-  top: 50%;
-  z-index: 30;
-  transform: translate(-8px, 60px);
-  padding: 8px;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: var(--shadow);
-  opacity: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
   pointer-events: none;
-  transition: opacity 0.2s, transform 0.2s;
-  max-width: calc(100vw - 80px);
-}
-
-.flag-counter-popup img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
-
-.flag-counter-popup.is-open {
-  opacity: 1;
-  transform: translate(0, 60px);
-  pointer-events: auto;
 }
 
 @media (max-width: 900px) {
   .social-floating {
     display: none;
-  }
-
-  .flag-counter-popup {
-    left: 50%;
-    top: auto;
-    bottom: 20px;
-    transform: translate(-50%, 8px);
-  }
-
-  .flag-counter-popup.is-open {
-    transform: translate(-50%, 0);
   }
 }
 

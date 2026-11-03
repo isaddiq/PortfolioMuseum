@@ -9,13 +9,12 @@ import { paintPoster, drawFloorPlan } from './art.js';
 const e = escapeHtml;
 
 export class Panels {
-    constructor({ data, museum, onNavigate, onShowExhibit, onOpenExhibit, onVisitors, onAction }) {
+    constructor({ data, museum, onNavigate, onShowExhibit, onOpenExhibit, onAction }) {
         this.data = data;
         this.museum = museum;
         this.onNavigate = onNavigate;
         this.onShowExhibit = onShowExhibit;
         this.onOpenExhibit = onOpenExhibit;
-        this.onVisitors = onVisitors;
         this.onAction = onAction;
         this.el = document.getElementById('panel');
         this.body = document.getElementById('panel-body');
@@ -49,10 +48,6 @@ export class Panels {
         if (!exhibit) return;
         if (exhibit.kind === 'link') {
             window.open(exhibit.payload.href, '_blank', 'noopener');
-            return;
-        }
-        if (exhibit.kind === 'visitors') {
-            this.onVisitors();
             return;
         }
         if (!push) this.stack = [];
@@ -114,9 +109,6 @@ export class Panels {
         } else if (target.dataset.copy) {
             ev.preventDefault();
             copyText(target.dataset.copy).then((ok) => flash(target, ok ? 'Copied' : 'Copy failed'));
-        } else if (target.dataset.action === 'visitors') {
-            ev.preventDefault();
-            this.onVisitors();
         } else if (target.dataset.action) {
             ev.preventDefault();
             this.onAction?.(target.dataset.action);
@@ -676,7 +668,6 @@ const RENDERERS = {
                         <button type="button" class="btn btn-ghost" data-copy="${e(loc.copy)}"><i class="fas fa-copy" aria-hidden="true"></i> Copy Address</button>
                     </p>`)}
                 ${section('Profiles', socialLinks(profile.social))}
-                <p><button type="button" class="btn btn-ghost" data-action="visitors"><i class="fas fa-flag" aria-hidden="true"></i> Show visitors</button></p>
                 <p class="muted small">${e(profile.copyright)}</p>`,
             after: (root) => this.mountContactMap(root.querySelector('#contact-map'), loc)
         };

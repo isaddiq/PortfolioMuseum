@@ -191,7 +191,6 @@ async function main() {
             if (window.matchMedia('(max-width: 760px)').matches) panels.close();
             goToExhibit(exhibit, { open: false });
         },
-        onVisitors: () => toggleVisitors(true),
         onAction: (action) => {
             if (action === 'collab-network' || action === 'collab-map') {
                 const mode = action === 'collab-map' ? 'map' : 'network';
@@ -216,7 +215,7 @@ async function main() {
 
     async function goToExhibit(exhibit, { open }) {
         if (!exhibit) return;
-        if (exhibit.kind === 'link' || exhibit.kind === 'visitors') {
+        if (exhibit.kind === 'link') {
             panels.open(exhibit);
             return;
         }
@@ -330,7 +329,6 @@ async function main() {
     });
     $('help-close').addEventListener('click', () => toggleHelp(false));
     $('help-body').innerHTML = controlsHelp();
-    initVisitors();
 
     window.addEventListener('keydown', (ev) => {
         if (isTyping(ev.target) && ev.key !== 'Escape') return;
@@ -338,7 +336,7 @@ async function main() {
             if (!$('lightbox').hidden) closeLightbox();
             else if (panels.isOpen) panels.close();
             else if (document.body.classList.contains('catalogue-open')) closeCatalogue();
-            else { toggleVisitors(false); toggleHelp(false); }
+            else toggleHelp(false);
         } else if (!ev.ctrlKey && !ev.metaKey && !ev.altKey && state.entered) {
             if (ev.code === 'KeyM') minimap.toggle();
             if (ev.code === 'KeyC') openCatalogue();
@@ -636,28 +634,6 @@ function toggleHelp(show) {
     help.hidden = !next;
     $('btn-help').setAttribute('aria-expanded', String(next));
     if (!next) safeSet('museum-help-seen', '1');
-}
-
-function initVisitors() {
-    const icon = document.querySelector('.flag-counter-icon');
-    icon?.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        toggleVisitors();
-    });
-    document.addEventListener('click', (ev) => {
-        const popup = $('flag-counter-popup');
-        if (popup.classList.contains('is-open') && !ev.target.closest('#flag-counter-popup, .flag-counter-icon, [data-action="visitors"]')) {
-            toggleVisitors(false);
-        }
-    });
-}
-
-function toggleVisitors(force) {
-    const popup = $('flag-counter-popup');
-    const icon = document.querySelector('.flag-counter-icon');
-    const open = force ?? !popup.classList.contains('is-open');
-    popup.classList.toggle('is-open', open);
-    icon?.setAttribute('aria-expanded', String(open));
 }
 
 function roomFromHash() {

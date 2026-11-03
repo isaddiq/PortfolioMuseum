@@ -2071,9 +2071,9 @@ export class Museum {
             });
         }
 
-        // South wall: profiles elsewhere, plus the visitor counter.
+        // South wall: profiles elsewhere.
         const south = { x: 60, z: 10 - f, nx: 0, nz: -1, length: 16 };
-        const tiles = [...(profile.social || []), { label: 'Visitors', icon: 'fas fa-flag', color: '#7c2d12', visitors: true }];
+        const tiles = profile.social || [];
         const step = Math.min(1.75, 14 / tiles.length);
         this.paintWall(south, 0, {
             w: 6, h: 0.9, y: 4.4, persistent: true,
@@ -2084,9 +2084,7 @@ export class Museum {
             this.hang(south, offset, {
                 w: step * 0.78, h: step * 0.78, y: 2.6, frame: 'none', persistent: true, lamp: false,
                 paint: () => art.paintSocialTile(social),
-                exhibit: social.visitors
-                    ? { id: 'visitors', room: 'contact', kind: 'visitors', title: 'Visitors', subtitle: 'Flag Counter: visitors by country', payload: null, icon: 'fas fa-flag' }
-                    : { id: `link-${social.label}`, room: 'contact', kind: 'link', title: social.label, subtitle: social.href, payload: social, icon: social.icon || 'fas fa-link' }
+                exhibit: { id: `link-${social.label}`, room: 'contact', kind: 'link', title: social.label, subtitle: social.href, payload: social, icon: social.icon || 'fas fa-link' }
             });
         });
     }
