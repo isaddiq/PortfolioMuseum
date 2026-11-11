@@ -136,7 +136,7 @@ export class Museum {
 
     register(exhibit, meshes, focus, normal, size, distance) {
         const id = exhibit.id || `exhibit-${this.exhibits.length}`;
-        const record = { ...exhibit, id, focus };
+        const record = { ...exhibit, id, focus, meshes: meshes.filter(Boolean) };
         if (focus && normal) record.view = this.viewFor(focus, normal, size || 1.5, distance);
         this.exhibits.push(record);
         this.byId.set(id, record);
@@ -187,6 +187,7 @@ export class Museum {
     setViewport(heightPx, fovDeg) {
         this.pointScale = heightPx / (2 * Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2));
         if (this.collab?.dotMat) this.collab.dotMat.uniforms.uScale.value = this.pointScale;
+        if (this.motes) this.motes.uniforms.uScale.value = this.pointScale;
     }
 
     // -----------------------------------------------------------------------
@@ -623,24 +624,41 @@ export class Museum {
         group.position.set(x, 0, z);
         group.rotation.y = rotY;
         this.group.add(group);
-        const base = new THREE.Mesh(new THREE.BoxGeometry(w, 1.0, 0.55), this.darkStone);
-        base.position.set(0, 0.5, 0);
-        group.add(base);
+        // A reading rail: a tilted screen on two bronze-footed posts.
+        const tilt = -0.96;
+        const parts = [];
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 0.05, 0.5), this.darkStone);
+        foot.position.set(0, 0.025, -0.04);
+        parts.push(foot);
+        for (const sx of w > 1.2 ? [-1, 1] : [0]) {
+            const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.0, 0.1), this.darkStone);
+            post.position.set(sx * w * 0.32, 0.53, -0.06);
+            parts.push(post);
+            const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.07, 0.2), this.world.materials.bronzeMat);
+            shoe.position.set(sx * w * 0.32, 0.085, -0.06);
+            parts.push(shoe);
+        }
         const mat = new THREE.MeshBasicMaterial({ color: '#1b1a18', toneMapped: false });
         const top = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.96, 0.62), mat);
         top.position.set(0, 1.12, 0.09);
-        top.rotation.x = -0.96;
+        top.rotation.x = tilt;
         group.add(top);
         const lid = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, 0.7), this.darkStone);
         lid.position.set(0, 1.1, 0.05);
-        lid.rotation.x = -0.96 + Math.PI / 2;
-        group.add(lid);
+        lid.rotation.x = tilt + Math.PI / 2;
+        parts.push(lid);
+        // A bronze tray under the screen, showing as a fine edge all round.
+        const tray = new THREE.Mesh(new THREE.BoxGeometry(w + 0.05, 0.03, 0.75), this.world.materials.bronzeMat);
+        tray.position.set(0, 1.1 - 0.03 * Math.cos(tilt + Math.PI / 2), 0.05 - 0.03 * Math.sin(tilt + Math.PI / 2));
+        tray.rotation.x = tilt + Math.PI / 2;
+        parts.push(tray);
+        for (const part of parts) group.add(part);
         const wp = new THREE.Vector3();
         top.getWorldPosition(wp);
         group.userData.slot = this.addSlot(mat, paint, wp, { persistent, placeholder: '#1b1a18' });
         this.world.colliders.push({ x, z, r: Math.max(w, 0.7) * 0.55 + 0.1 });
         const normal = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
-        this.register(exhibit, [base, top], { x: wp.x, y: 1.1, z: wp.z }, normal, 1.0);
+        this.register(exhibit, [...parts, top], { x: wp.x, y: 1.1, z: wp.z }, normal, 1.0);
         return group;
     }
 
@@ -690,6 +708,8 @@ export class Museum {
                 } : { id: `portrait-${i}`, room: 'home', kind: 'profile', title: `Portrait ${i + 1}`, subtitle: profile.name, payload: profile, catalogue: false }
             });
         });
+
+        this.buildMotes(cx, 0);
 
         // Name lectern in front of the main portrait.
         this.lectern(-40.6, 0, -Math.PI / 2, {
@@ -773,6 +793,68 @@ export class Museum {
         this.paintWall(east, 0, {
             w: 5.6, h: 1.2, y: 6.0, persistent: true,
             paint: (pal) => art.paintLettering({ text: 'GRAND HALL', sub: 'Galleries I – VIII · Contact', width: 1400, height: 300, color: pal.ink, subColor: pal.accent, size: 110 })
+        });
+    }
+
+    /** Dust drifting in the shaft of daylight under the oculus. */
+    buildMotes(x, z) {
+        if (this.calm) return;
+        const N = 260;
+        const rand = seededRandom(909);
+        const pos = new Float32Array(N * 3);
+        const seed = new Float32Array(N);
+        for (let i = 0; i < N; i++) {
+            const a = rand() * Math.PI * 2;
+            const r = Math.sqrt(rand()) * 4.6;
+            pos.set([Math.cos(a) * r, 0.3 + rand() * 6.4, Math.sin(a) * r], i * 3);
+            seed[i] = rand();
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+        const mat = new THREE.ShaderMaterial({
+            uniforms: { uTime: { value: 0 }, uScale: { value: this.pointScale }, uGain: { value: 1 } },
+            vertexShader: `
+                uniform float uTime; uniform float uScale;
+                attribute float aSeed;
+                varying float vA;
+                void main() {
+                    vec3 p = position;
+                    float t = uTime * (0.05 + aSeed * 0.07);
+                    p.y = 0.3 + mod(p.y - t * 0.6, 6.4);
+                    p.x += sin(t * 3.0 + aSeed * 50.0) * 0.35;
+                    p.z += cos(t * 2.3 + aSeed * 31.0) * 0.35;
+                    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+                    gl_Position = projectionMatrix * mv;
+                    float edge = smoothstep(0.3, 1.2, p.y) * smoothstep(6.7, 5.4, p.y);
+                    vA = edge * (0.35 + 0.65 * abs(sin(uTime * 0.7 + aSeed * 90.0)));
+                    gl_PointSize = uScale * (0.012 + aSeed * 0.016) / max(0.1, -mv.z);
+                }`,
+            fragmentShader: `
+                uniform float uGain;
+                varying float vA;
+                void main() {
+                    float d = length(gl_PointCoord - 0.5);
+                    float a = smoothstep(0.5, 0.0, d) * vA * uGain;
+                    if (a < 0.004) discard;
+                    gl_FragColor = vec4(vec3(1.0, 0.94, 0.8) * a, 1.0);
+                    #include <colorspace_fragment>
+                }`,
+            transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+        });
+        const motes = new THREE.Points(geo, mat);
+        motes.position.set(x, 0, z);
+        motes.frustumCulled = false;
+        motes.userData.noPick = true;
+        this.group.add(motes);
+        this.motes = mat;
+        this.animators.push({
+            x, z, radius: 30,
+            update: (t) => {
+                mat.uniforms.uTime.value = t;
+                mat.uniforms.uGain.value = document.documentElement.dataset.theme === 'dark' ? 0.3 : 0.85;
+                return true;
+            }
         });
     }
 
@@ -1166,17 +1248,6 @@ export class Museum {
             };
         });
         this.distribute(items, [s.left, s.back, s.right, s.frontLeft], 1.0);
-        // A bench in the middle of the room.
-        const c = galleryPoint(room, 0, 9);
-        const top = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 0.8), new THREE.MeshStandardMaterial({ color: '#b07a4a', map: this.world.surfaces?.grain || null, roughness: 0.4 }));
-        top.position.set(c.x, 0.46, c.z);
-        this.group.add(top);
-        for (const dx of [-1.3, 1.3]) {
-            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.7), this.darkStone);
-            leg.position.set(c.x + dx, 0.21, c.z);
-            this.group.add(leg);
-        }
-        this.world.colliders.push({ x1: c.x - 1.6, z1: c.z - 0.5, x2: c.x + 1.6, z2: c.z + 0.5 });
     }
 
     buildSkills() {
@@ -1202,6 +1273,7 @@ export class Museum {
         const rise = this.skillRise;
         const setHeight = (c, k) => {
             c.col.scale.y = Math.max(0.001, k);
+            c.cap.position.y = 0.24 + c.hgt * k + 0.0125;
             c.tile.position.y = Math.max(0.24 + c.hgt * k + c.tileFromTop, c.tileMin);
         };
         this.animators.push({
@@ -1237,7 +1309,11 @@ export class Museum {
         const plinth = new THREE.Mesh(new THREE.BoxGeometry(width, 0.24, 0.9), this.plinthMat);
         plinth.position.set(0, 0.12, 0);
         group.add(plinth);
-        const colMat = new THREE.MeshStandardMaterial({ color, roughness: 0.28, metalness: 0.25 });
+        const colMat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, metalness: 0.15, clearcoat: 0.7, clearcoatRoughness: 0.25 });
+        const glow = new THREE.Color(color).convertSRGBToLinear();
+        glow.multiplyScalar(2.6 / Math.max(glow.r, glow.g, glow.b, 0.2));
+        const capMat = new THREE.MeshBasicMaterial({ color: glow, toneMapped: false });
+        const capGeo = new THREE.BoxGeometry(0.46 * scale, 0.025, 0.46 * scale);
         const catExhibitId = `skillcat-${cat.id}`;
         skills.forEach((skill, i) => {
             const x = -width / 2 + 0.25 * scale + pitch * (i + 0.5);
@@ -1247,6 +1323,10 @@ export class Museum {
             const col = new THREE.Mesh(colGeo, colMat);
             col.position.set(x, 0.24, 0);
             group.add(col);
+            const cap = new THREE.Mesh(capGeo, capMat);
+            cap.position.set(x, 0.24 + hgt + 0.0125, 0);
+            cap.userData.noShadow = true;
+            group.add(cap);
             const tileW = 0.5 * scale;
             const tileH = tileW * (460 / 360);
             const mat = new THREE.MeshBasicMaterial({ color: '#fbf9f5', toneMapped: false });
@@ -1255,12 +1335,12 @@ export class Museum {
             tile.position.set(x, Math.max(top - tileH / 2 - 0.05, 0.24 + tileH / 2 + 0.04), 0.46 * scale / 2 + 0.006);
             if (top < tileH + 0.4) tile.position.y = top + tileH / 2 + 0.02;
             group.add(tile);
-            this.skillRise.columns.push({ col, tile, hgt, tileFromTop: tile.position.y - top, tileMin: 0.24 + tileH / 2 + 0.02 });
+            this.skillRise.columns.push({ col, tile, cap, hgt, tileFromTop: tile.position.y - top, tileMin: 0.24 + tileH / 2 + 0.02 });
             const wp = new THREE.Vector3();
             tile.getWorldPosition(wp);
             this.addSlot(mat, async () => art.paintSkillTile(skill, await this.skillLogo(skill), color), wp, { placeholder: '#fbf9f5' });
             this.register({ id: `skill-${cat.id}-${i}`, room: room.id, kind: 'skill', title: skill.name, subtitle: `${cat.title} · ${skill.level}`, payload: { skill, category: cat, color }, icon: cat.icon },
-                [col, tile], { x: wp.x, y: wp.y, z: wp.z }, new THREE.Vector3(surface.nx, 0, surface.nz), 1.2);
+                [col, tile, cap], { x: wp.x, y: wp.y, z: wp.z }, new THREE.Vector3(surface.nx, 0, surface.nz), 1.2);
         });
         // Category sign on the wall behind.
         const signPose = this.surfacePose(surface, offset);
@@ -1643,7 +1723,7 @@ export class Museum {
         this.addSlot(selfTag, () => art.paintCollabLabel(profile.name, `${collaborations.center?.university || ''}`, '#e8c27a'), centre, { placeholder: '#ffffff' });
         meshes.push(selfSprite);
 
-        this.register({ id: 'collab-network', room: room.id, kind: 'collab', title: 'Co-authorship network', subtitle: `${n} co-authors · sized by joint papers · coloured by country`, payload: null, icon: 'fas fa-circle-nodes' },
+        this.register({ id: 'collab-network', room: room.id, kind: 'collab', title: 'Co-authorship network', subtitle: `${n} co-authors · sized by joint papers · coloured by country`, payload: null, icon: 'fas fa-circle-nodes', noHighlight: true },
             meshes, { x: centre.x, y: centre.y - 0.4, z: centre.z }, toDoor, 3.9);
 
         const d = new THREE.Object3D();
@@ -1934,7 +2014,7 @@ export class Museum {
             }
         }
 
-        const record = this.register({ id: 'collab-map', room: room.id, kind: 'collab', title: 'Co-authors on the globe', subtitle: `${countries.length} countries · arcs from ${center.university || 'home'}`, payload: { tab: 'country' }, icon: 'fas fa-earth-asia' },
+        const record = this.register({ id: 'collab-map', room: room.id, kind: 'collab', title: 'Co-authors on the globe', subtitle: `${countries.length} countries · arcs from ${center.university || 'home'}`, payload: { tab: 'country' }, icon: 'fas fa-earth-asia', noHighlight: true },
             [shell, ...cardMeshes], { x: centre.x, y: centre.y, z: centre.z }, toDoor, 2);
         record.view = { x: centre.x + toDoor.x * 4.6, z: centre.z + toDoor.z * 4.6, yaw: faceY, pitch: 0.12 };
 

@@ -9,7 +9,7 @@ The academic portfolio of Saddiq Ur Rehman, a researcher in Building Information
 
 ## 🏛️ The Museum
 
-- **Lobby (Home)**: a portrait column, About Me wall texts, research interests, Google Scholar metrics, the museum directory, and a wall-mounted **news TV** that cycles through every news item (photo with a slow Ken Burns drift, headline, progress bar and a scrolling ticker), flanked by the four latest highlights
+- **Lobby (Home)**: an oculus open to the sky (clouds by day, stars by night) with dust drifting in its shaft of light, turned stone columns, a portrait column, About Me wall texts, research interests, Google Scholar metrics, the museum directory, and a wall-mounted **news TV** that cycles through every news item (photo with a slow Ken Burns drift, headline, progress bar and a scrolling ticker), flanked by the four latest highlights
 - **Grand Hall**: gallery banners above every door, the news timeline and the most-cited works
 - **Galleries I–VIII**: Education (diplomas), Experience, Publications (journal papers hang as their **journal's cover**, the rest as a poster generated from the paper's topics, plus a reading desk with search and filters), Projects, Skills (columns that rise to their proficiency as you walk in), Tools (screens), Awards (gently swaying medals and framed certificates) and Activities
 - **Activities' hologram projector**: the co-authors as a turning **network** with sparks running along its links, or as a **holographic globe** of glowing land with a marker on each partner country, arcs from Korea, and cards beside it listing the co-authors there. The globe turns on its own; drag it to spin and tilt it. Switch with the HUD control (click Network, World map, or the Hologram label to flip), the console beside the dais, the collaboration panel or `V`
@@ -17,17 +17,18 @@ The academic portfolio of Saddiq Ur Rehman, a researcher in Building Information
 
 Every work has its caption sign-written on the wall above it, and wall texts, gallery introductions and the big lettering are painted straight onto the plaster: they take the wall's light, shadows and texture, with a little wear in the paint.
 
-**Visitors**: ten realistic people (businesswomen and businessmen, and visitors in everyday clothes) wander the galleries with motion-captured walks, stop a few steps back from works, look around, and raise a camera to take photos, flash and all. They walk around furniture and through the doors, give way to you and to each other, and only those near you are animated.
+**Visitors**: ten realistic people (businesswomen and businessmen, and visitors in everyday clothes) wander the galleries with motion-captured walks, stop a few steps back from works, look around, and raise a camera to take photos, flash and all. They ease up to their pace and down from it, slow and lean into corners, take straight lines across a room instead of zigzags, and their walk cycle always matches the ground they cover, so feet do not slide. They walk around furniture and through the doors, give way to you and to each other, and only those near you are animated.
 
-The **catalogue** button lists every work as text (the accessible view), and the **Classic site** button in the top bar opens the page-based portfolio at [isaddiq.github.io](https://isaddiq.github.io).
+The **catalogue** button lists every work as text (the accessible view), and the arrow button at the top right opens the page-based portfolio at [isaddiq.github.io](https://isaddiq.github.io).
 
-**Controls:** drag with the left or right mouse button to look around, standing still or walking; `W` `A` `S` `D` or the arrow keys to walk (`Shift` to hurry); scroll to step; click the floor to walk there; `1`–`0` jump to a room, `M` map, `C` catalogue, `H` help, `Esc` closes panels. Touch screens get a joystick; a finger drag looks around. The sun/moon button switches between day and night lighting, and the sparkle button switches graphics between **high** (shadows, bloom, sharper textures) and **fast** (for phones and small GPUs; the default there). Gallery links such as `#publications` (and the old `#software`) still work.
+**Controls:** drag with the left or right mouse button to look around, standing still or walking; `W` `A` `S` `D` or the arrow keys to walk (`Shift` to hurry); scroll to step; click the floor to walk there; `1`–`0` jump to a room, `M` map, `C` catalogue, `H` help, `Esc` closes panels. Touch screens get a joystick; a finger drag looks around. `N` and `P` (or the buttons at the foot of an open panel) walk on to the next or previous work in the room. Hovering a work closes a set of brackets around it. The **Lighting** switch (bottom left) sets day or night, and the **Graphics** switch sets **High** (shadows, bloom, mirrored floors, sharper textures) or **Fast** (for phones and small GPUs; the default there). Gallery links such as `#publications` (and the old `#software`) still work.
 
 ### Rendering
 
 - **Materials**: scanned CC0 surfaces from [Poly Haven](https://polyhaven.com) (herringbone parquet, limestone tiles, plaster, wool) with colour, normal and roughness maps, mapped in real-world metres
-- **Lighting**: a skylight key that casts soft shadows and follows the visitor, hemisphere and environment bounce, baked ambient occlusion along every wall and under every pedestal, brass picture lights with light pools on the walls, and a shaft of daylight under the lobby's oculus
-- **Post-processing** (high quality): multisampled HDR, bloom on lamps, light panels and holograms, and a highlight roll-off that leaves artwork colours untouched
+- **Lighting**: a skylight key that casts soft shadows and follows the visitor, hemisphere and environment bounce, baked ambient occlusion along every wall and under every pedestal, baked pools of light on the floor under every ceiling light, a laylight and a rail of track spots in each gallery, brass picture lights with light pools on the walls, and a shaft of daylight under the lobby's oculus
+- **Polished floors** (high quality): one planar reflection shared by every floor, blurred by roughness and strengthened towards the horizon (`reflect.js`)
+- **Post-processing** (high quality): multisampled HDR, bloom on lamps, light panels and holograms, a highlight roll-off that leaves artwork colours untouched, and a fine dither against banding
 - **Sharp exhibits**: wall texts are painted supersampled, and photos are sized to their frame, so close-ups stay crisp without filling GPU memory; textures load and unload by distance
 - Rendering is on demand: frames are drawn only while something moves or animates nearby
 
@@ -53,7 +54,8 @@ The **catalogue** button lists every work as text (the accessible view), and the
 |-- assets/
 |   |-- css/museum.css      # HUD, panels, catalogue and loader
 |   |-- js/museum/          # world (building, lights), exhibits, art (canvas painters),
-|   |                       # controls, panels, post (bloom pipeline), visitors, data, main
+|   |                       # controls, panels, post (bloom pipeline), reflect (mirrored floors),
+|   |                       # visitors, data, main
 |   |-- museum/             # Generated gallery copies, textures/ (Poly Haven surfaces), people/ (visitors)
 |   |-- images/             # Originals: certificates, covers, news, profile, projects, venues, ...
 |   |-- icons/, logos/      # Skill, social and organisation logos

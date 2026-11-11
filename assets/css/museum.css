@@ -4,40 +4,64 @@
    ========================================================================== */
 
 :root {
-  --bg: #ece6db;
-  --surface: #fbf9f5;
-  --surface-2: #f2ede4;
-  --text: #1c1b19;
-  --muted: #6d675e;
-  --line: rgba(28, 27, 25, 0.12);
-  --accent: #a07a3f;
-  --accent-strong: #8a6630;
-  --gold: #e8c27a;
-  --hud: rgba(22, 21, 19, 0.62);
-  --hud-line: rgba(255, 255, 255, 0.14);
-  --hud-text: #f6f1e7;
-  --hud-muted: rgba(246, 241, 231, 0.68);
-  --shadow: 0 18px 50px rgba(20, 16, 10, 0.25);
+  /* Neutral greys throughout; the galleries supply the colour. */
+  --bg: #e9eaec;
+  --surface: #fbfbfc;
+  --surface-2: #f1f2f4;
+  --text: #17181b;
+  --muted: #6b6f78;
+  --line: rgba(20, 22, 26, 0.1);
+  --accent: #4a4e57;
+  --accent-strong: #1f2125;
+  --gold: #26282d;              /* the accent (kept under its old name) */
+  --on-accent: #ffffff;
+  --hud: rgba(250, 250, 251, 0.74);
+  --hud-solid: #fafafb;
+  --hud-line: rgba(20, 22, 26, 0.09);
+  --hud-text: #1b1c1f;
+  --hud-muted: rgba(27, 28, 31, 0.58);
+  --hud-hover: rgba(20, 22, 26, 0.07);
+  --shadow: 0 18px 50px rgba(18, 20, 24, 0.16);
+  --lift: 0 1px 2px rgba(18, 20, 24, 0.06), 0 8px 24px rgba(18, 20, 24, 0.1);
   --radius: 14px;
-  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --serif: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
   --sans: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: "JetBrains Mono", Consolas, monospace;
-  --panel-accent: #b08d57;
+  --panel-accent: #4a4e57;
+  --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #07080b;
-  --surface: #15161a;
-  --surface-2: #1d1f24;
-  --text: #f2ede4;
-  --muted: #a9a297;
+  --bg: #0b0c0e;
+  --surface: #16171a;
+  --surface-2: #1f2125;
+  --text: #eceef1;
+  --muted: #9a9fa8;
   --line: rgba(255, 255, 255, 0.1);
-  --accent: #e8c27a;
-  --accent-strong: #f0d39b;
-  --hud: rgba(12, 12, 14, 0.66);
+  --accent: #c5c9d0;
+  --accent-strong: #ffffff;
+  --gold: #eceef1;
+  --on-accent: #131417;
+  --hud: rgba(24, 25, 28, 0.72);
+  --hud-solid: #18191c;
+  --hud-line: rgba(255, 255, 255, 0.1);
+  --hud-text: #eef0f3;
+  --hud-muted: rgba(238, 240, 243, 0.6);
+  --hud-hover: rgba(255, 255, 255, 0.09);
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --panel-accent: #c5c9d0;
   color-scheme: dark;
+}
+
+/* Surfaces that are dark whatever the lighting. */
+.loader,
+.fatal,
+.hover-tip,
+.lightbox {
+  --gold: #eceef1;
+  --on-accent: #131417;
 }
 
 *,
@@ -135,8 +159,20 @@ a {
 }
 
 .icon-btn:hover {
-  background: rgba(40, 38, 34, 0.85);
-  border-color: rgba(232, 194, 122, 0.6);
+  background: var(--hud-solid);
+  border-color: color-mix(in srgb, var(--hud-text) 26%, transparent);
+}
+
+.icon-btn:active {
+  transform: scale(0.94);
+}
+
+.icon-btn,
+.brand,
+.room-nav,
+.minimap,
+.social-icon {
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .icon-btn-sm {
@@ -169,12 +205,12 @@ a {
 
 .btn-primary {
   background: var(--gold);
-  color: #1d1708;
+  color: var(--on-accent);
   border-color: transparent;
 }
 
 .btn-primary:hover {
-  background: #f0d39b;
+  background: var(--accent-strong);
 }
 
 .btn-primary:disabled {
@@ -295,7 +331,7 @@ a {
   height: 34px;
   border-radius: 50%;
   background: var(--gold);
-  color: #1d1708;
+  color: var(--on-accent);
 }
 
 .brand-text {
@@ -354,7 +390,7 @@ a {
 }
 
 .room-nav .nav-btn.active {
-  color: #1d1708;
+  color: var(--on-accent);
   background: var(--gold);
 }
 
@@ -372,50 +408,45 @@ a {
   display: none;
 }
 
-.icon-btn.classic-btn {
-  display: inline-flex;
-  gap: 8px;
-  width: auto;
-  padding: 0 15px 0 13px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.icon-btn.classic-btn i {
-  color: var(--gold);
-}
-
-@media (max-width: 1720px) {
-  .icon-btn.classic-btn {
-    width: 40px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .icon-btn.classic-btn span {
-    display: none;
-  }
-}
-
-.theme-btn .theme-night,
-:root[data-theme="dark"] .theme-btn .theme-day {
-  display: none;
-}
-
-:root[data-theme="dark"] .theme-btn .theme-night {
-  display: inline;
-}
-
-@media (max-width: 1580px) {
-  .room-nav .nav-btn span {
+/* Narrower screens: icons only, except the room you are in; the others
+   name themselves in a tooltip. */
+@media (min-width: 901px) and (max-width: 1580px) {
+  .room-nav .nav-btn:not(.active) span {
     display: none;
   }
 
   .room-nav .nav-btn {
+    position: relative;
     padding: 8px 11px;
+  }
+
+  .room-nav .nav-btn.active {
+    padding: 8px 14px;
+  }
+
+  .room-nav .nav-btn:not(.active)::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 10px);
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: rgba(16, 16, 18, 0.92);
+    border: 1px solid rgba(150, 155, 165, 0.25);
+    color: #f1f2f4;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transform: translate(-50%, -4px);
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+
+  .room-nav .nav-btn:not(.active):hover::after,
+  .room-nav .nav-btn:not(.active):focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 }
 
@@ -565,8 +596,8 @@ a {
   padding: 9px 13px 10px 10px;
   border-radius: 12px;
   background: rgba(16, 16, 18, 0.9);
-  border: 1px solid rgba(232, 194, 122, 0.22);
-  color: #f6f1e7;
+  border: 1px solid rgba(150, 155, 165, 0.22);
+  color: #f1f2f4;
   font-size: 0.82rem;
   pointer-events: none;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
@@ -581,7 +612,7 @@ a {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: rgba(232, 194, 122, 0.14);
+  background: rgba(150, 155, 165, 0.14);
   color: var(--gold);
   font-size: 0.8rem;
 }
@@ -717,14 +748,7 @@ a {
   padding: 5px 10px;
 }
 
-.icon-btn.is-low {
-  color: var(--hud-muted);
-}
 
-.icon-btn[aria-expanded="true"],
-.icon-btn[aria-pressed="true"]#btn-quality {
-  border-color: rgba(232, 194, 122, 0.55);
-}
 
 .catalogue-empty {
   padding: 40px 0;
@@ -786,7 +810,7 @@ a {
   height: 46px;
   margin: -23px 0 0 -23px;
   border-radius: 50%;
-  background: rgba(232, 194, 122, 0.85);
+  background: rgba(150, 155, 165, 0.85);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
@@ -863,7 +887,7 @@ a {
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: rgba(232, 194, 122, 0.14);
+  background: rgba(150, 155, 165, 0.14);
   color: var(--gold);
   font-size: 0.75rem;
 }
@@ -916,11 +940,14 @@ kbd {
   -webkit-backdrop-filter: blur(12px);
   text-decoration: none;
   font-size: 0.9rem;
-  transition: transform 0.2s, background 0.2s;
+  transition: transform 0.2s, background 0.2s, opacity 0.2s;
+  opacity: 0.8;
 }
 
-.social-icon:hover {
+.social-icon:hover,
+.social-icon:focus-visible {
   transform: scale(1.1);
+  opacity: 1;
 }
 
 .social-icon.linkedin:hover { background: #0a66c2; }
@@ -1013,6 +1040,47 @@ kbd {
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* Previous / next: walk on through the room without closing the panel. */
+.panel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.panel-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.panel-step:hover {
+  border-color: var(--panel-accent);
+  color: var(--panel-accent);
+}
+
+.panel-step:active {
+  transform: scale(0.97);
+}
+
+.panel-pos {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-align: center;
 }
 
 .panel-body {
@@ -1255,7 +1323,7 @@ button.chip.active {
 :root[data-theme="dark"] .badge-role,
 :root[data-theme="dark"] .badge-corresponding { color: #f9a8d4; }
 :root[data-theme="dark"] .badge-gold,
-:root[data-theme="dark"] .badge-editor-choice { color: #f0d39b; }
+:root[data-theme="dark"] .badge-editor-choice { color: var(--accent-strong); }
 :root[data-theme="dark"] .badge-cited { color: #93c5fd; }
 
 .pub-head {
@@ -2069,9 +2137,9 @@ address {
   display: grid;
   place-items: center;
   padding: 20px;
-  color: #f6f1e7;
+  color: #f1f2f4;
   background:
-    radial-gradient(ellipse at 50% 42%, #1d1a16 0%, #0b0b0d 70%);
+    radial-gradient(ellipse at 50% 42%, #1c1d21 0%, #0b0c0e 70%);
 }
 
 .loader {
@@ -2098,10 +2166,10 @@ address {
   height: 64px;
   margin-bottom: 18px;
   border-radius: 50%;
-  border: 1px solid rgba(232, 194, 122, 0.45);
+  border: 1px solid rgba(150, 155, 165, 0.45);
   color: var(--gold);
   font-size: 1.5rem;
-  box-shadow: 0 0 0 8px rgba(232, 194, 122, 0.06), 0 0 40px rgba(232, 194, 122, 0.18);
+  box-shadow: 0 0 0 8px rgba(150, 155, 165, 0.06), 0 0 40px rgba(150, 155, 165, 0.18);
   animation: loader-pulse 2.4s ease-in-out infinite;
 }
 
@@ -2117,7 +2185,7 @@ address {
 .loader-sub {
   margin: 8px 0 26px;
   font-size: 0.92rem;
-  color: rgba(246, 241, 231, 0.65);
+  color: rgba(241, 242, 244, 0.65);
 }
 
 @keyframes loader-in {
@@ -2126,7 +2194,7 @@ address {
 }
 
 @keyframes loader-pulse {
-  50% { box-shadow: 0 0 0 14px rgba(232, 194, 122, 0.03), 0 0 60px rgba(232, 194, 122, 0.28); }
+  50% { box-shadow: 0 0 0 14px rgba(150, 155, 165, 0.03), 0 0 60px rgba(150, 155, 165, 0.28); }
 }
 
 .progress {
@@ -2140,7 +2208,7 @@ address {
 .progress span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #b08d57, var(--gold));
+  background: linear-gradient(90deg, #7d828c, #eceef1);
   transform-origin: left;
   transform: scaleX(0.02);
   transition: transform 0.3s ease;
@@ -2151,15 +2219,15 @@ address {
   font-size: 0.74rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(246, 241, 231, 0.5);
+  color: rgba(241, 242, 244, 0.5);
 }
 
 .fatal-card {
   width: min(560px, 100%);
   padding: 32px 30px;
   border-radius: 20px;
-  background: rgba(20, 19, 17, 0.85);
-  border: 1px solid rgba(232, 194, 122, 0.28);
+  background: rgba(22, 23, 26, 0.88);
+  border: 1px solid rgba(150, 155, 165, 0.28);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
   line-height: 1.55;
 }
@@ -2172,13 +2240,13 @@ address {
 }
 
 .fatal-card .btn {
-  color: #f6f1e7;
+  color: #f1f2f4;
   border-color: rgba(255, 255, 255, 0.25);
   background: transparent;
 }
 
 .fatal-card .btn-primary {
-  color: #1d1708;
+  color: var(--on-accent);
   background: var(--gold);
 }
 
@@ -2209,5 +2277,507 @@ body:not(.has-entered) .social-floating {
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   Interface, second edition: neutral greys, hairlines, soft glass.
+   Everything on the HUD is a rounded rectangle with one border weight, one
+   shadow and one easing curve, and every control says what it does.
+   ========================================================================== */
+
+body {
+  letter-spacing: -0.005em;
+}
+
+.panel-title,
+.toast-title,
+.loader-name,
+.catalogue h2,
+.help h2,
+.fatal-card h2,
+.brand-name,
+.hover-tip strong {
+  letter-spacing: -0.02em;
+}
+
+.hud-top {
+  background: none;
+  padding: 14px 16px;
+  gap: 10px;
+}
+
+/* One glass recipe for every floating piece. */
+.brand,
+.room-nav,
+.tool-btn,
+.icon-btn,
+.minimap,
+.help,
+.room-toast,
+.social-icon,
+.display-bar {
+  background: var(--hud);
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line);
+  box-shadow: var(--lift);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+}
+
+.brand,
+.room-nav,
+.display-bar,
+.minimap {
+  border-radius: 14px;
+}
+
+.brand {
+  padding: 5px 14px 5px 5px;
+  transition: background 0.25s var(--ease);
+}
+
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--gold);
+  color: var(--on-accent);
+  font-size: 0.85rem;
+}
+
+.brand-name {
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+
+.current-room {
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
+.room-nav {
+  padding: 4px;
+  gap: 1px;
+}
+
+.room-nav .nav-btn {
+  border-radius: 10px;
+  font-weight: 550;
+  transition: background 0.25s var(--ease), color 0.25s var(--ease);
+}
+
+.room-nav .nav-btn:hover {
+  background: var(--hud-hover);
+  color: var(--hud-text);
+}
+
+.room-nav .nav-btn.active {
+  background: var(--gold);
+  color: var(--on-accent);
+}
+
+/* Toolbar: labelled where there is room, tooltips everywhere. */
+.tool-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+  transition: background 0.25s var(--ease), transform 0.2s var(--ease), border-color 0.25s var(--ease);
+}
+
+.tool-btn i {
+  font-size: 0.9rem;
+  opacity: 0.86;
+}
+
+.tool-btn.tool-icon {
+  width: 40px;
+  padding: 0;
+}
+
+.tool-btn:hover {
+  background: var(--hud-solid);
+  border-color: color-mix(in srgb, var(--hud-text) 26%, transparent);
+}
+
+.tool-btn:active {
+  transform: scale(0.96);
+}
+
+.tool-btn[aria-pressed="true"]::before,
+.tool-btn[aria-expanded="true"]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.tool-btn.menu-toggle {
+  display: none;
+}
+
+/* Tooltips for anything that is only an icon. */
+[data-tip] {
+  position: relative;
+}
+
+.tool-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #17181b;
+  color: #f1f2f4;
+  font-size: 0.72rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+  z-index: 5;
+}
+
+.tool-btn[data-tip]:hover::after,
+.tool-btn[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: none;
+}
+
+.room-nav .nav-btn:not(.active)::after {
+  background: #17181b;
+  border: 0;
+  color: #f1f2f4;
+}
+
+/* Display settings: two named switches, bottom left. */
+.display-bar {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  transition: opacity 0.6s ease 0.2s, transform 0.4s var(--ease);
+}
+
+body:not(.has-entered) .display-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--hud-hover);
+}
+
+.switch-label {
+  padding: 0 8px 0 7px;
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+
+.switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--hud-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s var(--ease), color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.switch button i {
+  font-size: 0.78rem;
+}
+
+.switch button:hover {
+  color: var(--hud-text);
+}
+
+.switch button[aria-pressed="true"] {
+  background: var(--hud-solid);
+  color: var(--hud-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0 0 1px var(--hud-line);
+}
+
+/* The help card sits above the switches. */
+.help {
+  bottom: 74px;
+  border-radius: 14px;
+}
+
+.help-ico {
+  background: var(--hud-hover);
+  color: var(--hud-text);
+}
+
+.help kbd {
+  border-color: color-mix(in srgb, var(--hud-text) 28%, transparent);
+}
+
+.minimap {
+  padding: 5px;
+}
+
+.minimap canvas {
+  border-radius: 10px;
+}
+
+/* Profiles: a quiet column on the left edge. */
+.social-floating {
+  gap: 6px;
+}
+
+.social-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  opacity: 1;
+  color: var(--hud-muted);
+  transition: transform 0.25s var(--ease), background 0.25s var(--ease), color 0.25s var(--ease);
+}
+
+.social-icon:hover,
+.social-icon:focus-visible {
+  transform: translateX(3px);
+  color: #fff;
+}
+
+/* Room toast: a slim caption rather than a card. */
+.room-toast {
+  top: 76px;
+  padding: 10px 22px 12px;
+  border-radius: 14px;
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+
+.toast-eyebrow {
+  color: var(--hud-muted);
+  font-size: 0.64rem;
+}
+
+.toast-title {
+  font-size: 1.35rem;
+  font-weight: 650;
+}
+
+.toast-sub {
+  font-size: 0.8rem;
+}
+
+.hover-tip {
+  border-radius: 10px;
+  background: rgba(23, 24, 27, 0.92);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.hover-tip > i {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f2f4;
+}
+
+.hover-tip strong {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.hover-tip em {
+  color: rgba(241, 242, 244, 0.62);
+}
+
+/* Detail panel: grey whatever the gallery; a hairline instead of a stripe. */
+.panel {
+  --panel-accent: var(--accent) !important;
+  border-left: 1px solid var(--line);
+  box-shadow: -24px 0 60px rgba(18, 20, 24, 0.14);
+  transition: transform 0.5s var(--ease), visibility 0.5s;
+}
+
+.panel-title {
+  font-weight: 650;
+  font-size: 1.3rem;
+}
+
+.panel-head .icon-btn,
+.catalogue .icon-btn,
+.lightbox .icon-btn {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.panel-body .lead {
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.panel-step {
+  border-radius: 10px;
+}
+
+.btn {
+  border-radius: 10px;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: var(--on-accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-strong);
+}
+
+.search {
+  border-radius: 12px;
+}
+
+@media (max-width: 760px) {
+  .panel {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* Loader. */
+.loader-mark {
+  border-radius: 18px;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  animation: loader-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes loader-breathe {
+  50% { border-color: rgba(255, 255, 255, 0.4); transform: scale(1.04); }
+}
+
+.loader-name {
+  font-weight: 650;
+  font-size: clamp(1.7rem, 5vw, 2.5rem);
+}
+
+.loader {
+  transition: opacity 1.1s var(--ease), visibility 1.1s;
+}
+
+/* Hologram switch joins the family. */
+.view-switch {
+  border-radius: 14px;
+  bottom: 16px;
+}
+
+.view-switch button {
+  border-radius: 10px;
+}
+
+/* Narrower screens. */
+@media (max-width: 1280px) {
+  .tool-btn:not(.tool-icon) {
+    width: 40px;
+    padding: 0;
+  }
+
+  .tool-btn:not(.tool-icon) span {
+    display: none;
+  }
+
+  .switch-label {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .tool-btn.menu-toggle {
+    display: inline-flex;
+  }
+
+  .room-nav {
+    border-radius: 14px;
+  }
+
+  .display-bar {
+    left: 12px;
+    top: 64px;
+    bottom: auto;
+  }
+
+  .help {
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .tool-btn,
+  .tool-btn.tool-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  #btn-classic {
+    display: none;
+  }
+
+  .switch button span {
+    display: none;
+  }
+
+  .switch button {
+    padding: 0 9px;
+  }
+}
+
+/* Touch: the joystick has the bottom-left corner. */
+@media (pointer: coarse) {
+  .display-bar {
+    left: 12px;
+    top: 64px;
+    bottom: auto;
+  }
+
+  .help {
+    bottom: 160px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-mark {
+    animation: none;
   }
 }

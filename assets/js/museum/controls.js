@@ -14,7 +14,7 @@ const PITCH_LIMIT = 1.2;
 const CLICK_SLOP = 6;
 
 export class Controls {
-    constructor(camera, dom, colliders, { onClick, onHover, onUserMove, onGrab } = {}) {
+    constructor(camera, dom, colliders, { onClick, onHover, onUserMove, onGrab, calm = false } = {}) {
         this.camera = camera;
         this.dom = dom;
         this.colliders = colliders;
@@ -40,6 +40,10 @@ export class Controls {
         // turns the view smoothly whether or not the visitor is walking.
         this.lookYaw = 0;
         this.lookPitch = 0;
+        // Footsteps: the eye rises and falls a little with every stride.
+        this.calm = calm;
+        this.stride = 0;
+        this.bob = 0;
         camera.rotation.order = 'YXZ';
         this.bind();
     }
@@ -215,6 +219,7 @@ export class Controls {
     update(dt) {
         if (this.glide) {
             const g = this.glide;
+            this.bob *= Math.exp(-dt * 8);
             g.t = Math.min(1, g.t + dt / g.dur);
             const k = easeInOut(g.t);
             this.x = g.from.x + (g.to.x - g.from.x) * k;
@@ -296,6 +301,14 @@ export class Controls {
             this.vx = 0;
             this.vz = 0;
         }
+        if (!this.calm) {
+            const pace = Math.hypot(this.vx, this.vz);
+            this.stride += pace * dt;
+            const want = Math.min(1, pace / WALK);
+            this.bob += (want - this.bob) * (1 - Math.exp(-dt * 7));
+            if (this.bob < 0.002) this.bob = 0;
+            else changed = true;
+        }
         if (changed) this.apply();
         return changed;
     }
@@ -347,7 +360,7 @@ export class Controls {
     }
 
     apply() {
-        this.camera.position.set(this.x, EYE, this.z);
+        this.camera.position.set(this.x, EYE + Math.sin(this.stride * 2.7) * 0.02 * this.bob, this.z);
         this.camera.rotation.set(this.pitch, this.yaw, 0);
     }
 }

@@ -9,19 +9,25 @@ import { paintPoster, drawFloorPlan } from './art.js';
 const e = escapeHtml;
 
 export class Panels {
-    constructor({ data, museum, onNavigate, onShowExhibit, onOpenExhibit, onAction }) {
+    constructor({ data, museum, onNavigate, onShowExhibit, onOpenExhibit, onAction, onStep, onChange }) {
         this.data = data;
         this.museum = museum;
         this.onNavigate = onNavigate;
         this.onShowExhibit = onShowExhibit;
         this.onOpenExhibit = onOpenExhibit;
         this.onAction = onAction;
+        this.onStep = onStep;
+        this.onChange = onChange;
         this.el = document.getElementById('panel');
         this.body = document.getElementById('panel-body');
         this.titleEl = document.getElementById('panel-title');
         this.eyebrowEl = document.getElementById('panel-eyebrow');
         this.backBtn = document.getElementById('panel-back');
         this.showBtn = document.getElementById('panel-show');
+        this.navEl = document.getElementById('panel-nav');
+        this.posEl = document.getElementById('panel-pos');
+        document.getElementById('panel-prev')?.addEventListener('click', () => this.step(-1));
+        document.getElementById('panel-next')?.addEventListener('click', () => this.step(1));
         this.stack = [];
         this.pubFilters = { type: 'all', role: 'all', year: 'all', topics: new Set(), query: '' };
         this.maps = [];
@@ -42,6 +48,25 @@ export class Panels {
 
     get isOpen() {
         return this.el.classList.contains('is-open');
+    }
+
+    /** The exhibit the panel is showing. */
+    get current() {
+        return this.stack[this.stack.length - 1] || null;
+    }
+
+    /** The works hung in the same room, in hanging order (for previous / next). */
+    neighbours(exhibit) {
+        if (!exhibit || exhibit.catalogue === false || !exhibit.view) return [];
+        return this.museum.exhibits.filter((x) => x.room === exhibit.room && x.catalogue !== false && x.view && x.kind !== 'link');
+    }
+
+    /** Walk on to the next (or previous) work in the room. */
+    step(dir) {
+        const list = this.neighbours(this.current);
+        if (this.stack.length !== 1 || list.length < 2) return;
+        const i = list.indexOf(this.current);
+        if (i >= 0) this.onStep?.(list[(i + dir + list.length) % list.length]);
     }
 
     open(exhibit, { push = false } = {}) {
@@ -66,6 +91,7 @@ export class Panels {
         this.el.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('panel-open');
         this.stack = [];
+        this.onChange?.();
     }
 
     back() {
@@ -85,7 +111,14 @@ export class Panels {
         this.backBtn.hidden = this.stack.length < 2;
         this.showBtn.hidden = !exhibit.view || exhibit.virtual;
         this.el.style.setProperty('--panel-accent', room?.accent || '#b08d57');
+        const list = this.stack.length === 1 ? this.neighbours(exhibit) : [];
+        const at = list.indexOf(exhibit);
+        if (this.navEl) {
+            this.navEl.hidden = list.length < 2 || at < 0;
+            if (!this.navEl.hidden) this.posEl.textContent = `${at + 1} of ${list.length} in ${room?.title || 'this room'}`;
+        }
         out.after?.(this.body);
+        this.onChange?.();
     }
 
     handleClick(ev) {
@@ -771,7 +804,7 @@ export function controlsHelp() {
         <li><span class="help-ico"><i class="fas fa-arrows-up-down-left-right" aria-hidden="true"></i></span><span>Drag with the left or right mouse button to look around, standing still or walking. Scroll to step forward or back.</span></li>
         <li><span class="help-ico"><i class="fas fa-hand-pointer" aria-hidden="true"></i></span><span>Click the floor to walk there. Click any work to read about it. Drag the globe in Gallery VIII to spin it.</span></li>
         <li><span class="help-ico"><i class="fas fa-mobile-screen" aria-hidden="true"></i></span><span>On touch screens the joystick walks, a finger drag looks and a tap selects.</span></li>
-        <li><span class="help-ico"><i class="fas fa-keyboard" aria-hidden="true"></i></span><span><kbd>1</kbd>–<kbd>0</kbd> rooms · <kbd>M</kbd> map · <kbd>C</kbd> catalogue · <kbd>V</kbd> hologram view · <kbd>Esc</kbd> close</span></li>
+        <li><span class="help-ico"><i class="fas fa-keyboard" aria-hidden="true"></i></span><span><kbd>1</kbd>–<kbd>0</kbd> rooms · <kbd>M</kbd> map · <kbd>C</kbd> catalogue · <kbd>V</kbd> hologram view · <kbd>N</kbd> <kbd>P</kbd> next and previous work · <kbd>Esc</kbd> close</span></li>
     </ul>`;
 }
 

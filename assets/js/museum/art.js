@@ -954,7 +954,7 @@ export function paintFloorPlan(rooms, { width = 1400, height = 760, dark = false
 }
 
 /** Draw the museum plan into a 2D context (also used by the live minimap). */
-export function drawFloorPlan(ctx, rooms, width, height, { dark, highlight, labels = true, title = false, pad = 0.06 }) {
+export function drawFloorPlan(ctx, rooms, width, height, { dark, highlight, labels = true, title = false, pad = 0.06, mono = false }) {
     const minX = -52;
     const maxX = 68;
     const minZ = -26;
@@ -965,7 +965,7 @@ export function drawFloorPlan(ctx, rooms, width, height, { dark, highlight, labe
     const ox = (width - (maxX - minX) * scale) / 2;
     const oy = top + (height - top - (maxZ - minZ) * scale) / 2;
     const map = (x, z) => [ox + (x - minX) * scale, oy + (z - minZ) * scale];
-    ctx.fillStyle = dark ? '#121317' : '#f6f2ea';
+    ctx.fillStyle = mono ? (dark ? '#141518' : '#f4f5f6') : dark ? '#121317' : '#f6f2ea';
     ctx.fillRect(0, 0, width, height);
     if (title) {
         ctx.fillStyle = dark ? '#f4efe6' : INK;
@@ -982,14 +982,15 @@ export function drawFloorPlan(ctx, rooms, width, height, { dark, highlight, labe
         const [x1, z1, x2, z2] = room.rect;
         const [ax, ay] = map(x1, z1);
         const [bx, by] = map(x2, z2);
-        ctx.fillStyle = room.id === highlight ? hexToRgba(room.accent || '#b08d57', 0.55) : hexToRgba(room.accent || '#888888', dark ? 0.28 : 0.2);
+        ctx.fillStyle = mono ? (dark ? 'rgba(255,255,255,0.07)' : 'rgba(20,22,26,0.05)')
+            : room.id === highlight ? hexToRgba(room.accent || '#b08d57', 0.55) : hexToRgba(room.accent || '#888888', dark ? 0.28 : 0.2);
         ctx.fillRect(ax, ay, bx - ax, by - ay);
-        ctx.strokeStyle = dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+        ctx.strokeStyle = mono ? (dark ? 'rgba(255,255,255,0.3)' : 'rgba(20,22,26,0.28)') : dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
         ctx.lineWidth = Math.max(1, scale * 0.25);
         ctx.strokeRect(ax, ay, bx - ax, by - ay);
         const name = labels === 'mini' ? (room.mini || room.short) : room.short;
         if (labels && name) {
-            ctx.fillStyle = dark ? '#f4efe6' : INK;
+            ctx.fillStyle = mono ? (dark ? 'rgba(240,242,245,0.86)' : 'rgba(23,24,27,0.8)') : dark ? '#f4efe6' : INK;
             const fs = Math.max(7, Math.min(scale * 2.1, ((bx - ax) * 0.9) / (name.length * 0.6)));
             ctx.font = `600 ${fs}px ${SANS}`;
             ctx.textAlign = 'center';
@@ -1253,6 +1254,58 @@ export function paintGlow() {
     grad.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, S, S);
+    return canvas;
+}
+
+/** The sky seen through the oculus: a soft day sky with cloud, or stars. */
+export function paintSky(night) {
+    const S = 512;
+    const canvas = makeCanvas(S, S, 1);
+    const ctx = canvas.getContext('2d');
+    const rand = seededRandom(night ? 31 : 12);
+    const grad = ctx.createRadialGradient(S * 0.5, S * 0.5, 0, S * 0.5, S * 0.5, S * 0.56);
+    if (night) {
+        grad.addColorStop(0, '#0d1630');
+        grad.addColorStop(1, '#04060e');
+    } else {
+        grad.addColorStop(0, '#8fbdea');
+        grad.addColorStop(0.7, '#b9d6f2');
+        grad.addColorStop(1, '#e6f0fa');
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, S, S);
+    if (night) {
+        for (let i = 0; i < 220; i++) {
+            const r = rand() < 0.08 ? 1.5 : 0.4 + rand() * 0.6;
+            ctx.fillStyle = `rgba(${225 + rand() * 30},${225 + rand() * 30},255,${0.35 + rand() * 0.65})`;
+            ctx.beginPath();
+            ctx.arc(rand() * S, rand() * S, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        const moon = ctx.createRadialGradient(S * 0.66, S * 0.36, 0, S * 0.66, S * 0.36, 90);
+        moon.addColorStop(0, 'rgba(255,250,235,1)');
+        moon.addColorStop(0.2, 'rgba(255,250,235,0.95)');
+        moon.addColorStop(0.24, 'rgba(200,215,255,0.22)');
+        moon.addColorStop(1, 'rgba(200,215,255,0)');
+        ctx.fillStyle = moon;
+        ctx.fillRect(0, 0, S, S);
+    } else {
+        // Clouds: drifts of soft white blobs.
+        for (let c = 0; c < 7; c++) {
+            const cx = rand() * S;
+            const cy = rand() * S;
+            for (let i = 0; i < 16; i++) {
+                const x = cx + (rand() - 0.5) * 190;
+                const y = cy + (rand() - 0.5) * 60;
+                const r = 26 + rand() * 46;
+                const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+                g.addColorStop(0, 'rgba(255,255,255,0.3)');
+                g.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(x - r, y - r, r * 2, r * 2);
+            }
+        }
+    }
     return canvas;
 }
 

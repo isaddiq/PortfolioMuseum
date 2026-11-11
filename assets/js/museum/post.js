@@ -35,11 +35,20 @@ const FinishShader = {
         vec3 toSRGB(vec3 c) {
             return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
         }
+        float hash(vec2 p) {
+            vec3 q = fract(vec3(p.xyx) * 0.1031);
+            q += dot(q, q.yzx + 33.33);
+            return fract((q.x + q.y) * q.z);
+        }
         void main() {
             vec3 c = rolloff(max(texture2D(tDiffuse, vUv).rgb, 0.0));
             vec2 d = vUv - 0.5;
             c *= 1.0 - uVignette * smoothstep(0.18, 0.75, dot(d, d) * 2.0);
-            gl_FragColor = vec4(toSRGB(clamp(c, 0.0, 1.0)), 1.0);
+            c = toSRGB(clamp(c, 0.0, 1.0));
+            // A little noise, under one 8-bit step, breaks up banding in the
+            // long gradients on the dark gallery walls.
+            c += (hash(gl_FragCoord.xy) - 0.5) / 255.0 * 1.5;
+            gl_FragColor = vec4(c, 1.0);
         }`
 };
 
@@ -51,7 +60,7 @@ export function createPipeline(renderer, scene, camera) {
     });
     const composer = new EffectComposer(renderer, target);
     composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.42, 0.55, 1.0);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.34, 0.62, 1.0);
     composer.addPass(bloom);
     composer.addPass(new ShaderPass(FinishShader));
     return {

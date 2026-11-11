@@ -20,7 +20,8 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { makeCanvas, paintWoodGrain, paintBeam } from './art.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { makeCanvas, paintWoodGrain, paintBeam, paintSky } from './art.js';
 
 export const SKIN = 0.15;          // half a wall: each room paints its own side
 export const EYE = 1.65;
@@ -29,6 +30,7 @@ const DOOR_H = 3.8;
 const ROOM_H = 5;
 const HALL_H = 7;
 const AO_HEIGHT = 8;               // wall AO texture spans 0..8 m
+export const OCULUS = { x: -36, z: 0, r: 4.2 };
 
 const SIDE_ROOMS = [
     { id: 'education', mini: 'Educ.', numeral: 'I', title: 'Education', side: 'N', cx: -11, paint: '#2c4a3b', accent: '#3f8f63', icon: 'fas fa-graduation-cap', tagline: 'Academic background and credentials', cover: 'assets/images/covers/education-cover.webp', floor: 'wood' },
@@ -224,7 +226,9 @@ function wallOcclusion() {
     grad.addColorStop(0.03, 'rgb(175,175,175)');
     grad.addColorStop(0.12, 'rgb(238,238,238)');
     grad.addColorStop(0.3, 'rgb(255,255,255)');
-    grad.addColorStop(1, 'rgb(255,255,255)');
+    grad.addColorStop(0.5, 'rgb(250,250,250)');
+    grad.addColorStop(0.62, 'rgb(214,214,214)');
+    grad.addColorStop(1, 'rgb(150,150,150)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 4, 256);
     const tex = new THREE.CanvasTexture(canvas);
@@ -258,16 +262,32 @@ export function buildWorld(scene, renderer, surfaces = {}) {
     ceilingMat.userData.day = new THREE.Color('#57524b');
     ceilingMat.userData.night = new THREE.Color('#0d0c0b');
     themed.bounce = [ceilingMat];
+    const railMat = new THREE.MeshStandardMaterial({ color: '#17161a', roughness: 0.5, metalness: 0.6 });
     // Light panels and skylights are brighter than white so the bloom pass
     // catches them; without bloom they simply clip to white.
-    const lightPanelMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.1, 1.95), toneMapped: false });
+    const lightPanelMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.12, 1.07, 0.99), toneMapped: false });
     lightPanelMat.userData.day = lightPanelMat.color.clone();
-    lightPanelMat.userData.night = new THREE.Color(1.15, 1.05, 0.9);
+    lightPanelMat.userData.night = new THREE.Color(0.95, 0.86, 0.72);
     themed.emissive.push(lightPanelMat);
-    const skyMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.45, 1.6, 1.85), toneMapped: false });
-    skyMat.userData.day = skyMat.color.clone();
-    skyMat.userData.night = new THREE.Color(0.018, 0.026, 0.06);
-    themed.emissive.push(skyMat);
+    // Gallery laylights: a soft luminous ceiling, dimmer than the panels.
+    const laylightMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.96, 0.94, 0.89), toneMapped: false });
+    laylightMat.userData.day = laylightMat.color.clone();
+    laylightMat.userData.night = new THREE.Color(0.2, 0.19, 0.2);
+    themed.emissive.push(laylightMat);
+    // Track spot lenses: small and hot, so they bloom.
+    const lensMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 2.3, 1.8), toneMapped: false });
+    lensMat.userData.day = lensMat.color.clone();
+    lensMat.userData.night = new THREE.Color(3.0, 2.55, 1.85);
+    themed.emissive.push(lensMat);
+    // The sky seen through the lobby's oculus: painted for day and for night.
+    const skyDay = new THREE.CanvasTexture(paintSky(false));
+    const skyNight = new THREE.CanvasTexture(paintSky(true));
+    skyDay.colorSpace = skyNight.colorSpace = THREE.SRGBColorSpace;
+    const skyMat = new THREE.MeshBasicMaterial({ map: skyDay, color: new THREE.Color(1.3, 1.3, 1.3), toneMapped: false });
+    themed.sky = { mat: skyMat, day: skyDay, night: skyNight };
+    const drumMat = new THREE.MeshStandardMaterial({ color: '#f4efe6', roughness: 0.8, side: THREE.BackSide, emissive: '#6f6a60' });
+    drumMat.userData.day = new THREE.Color('#6f6a60');
+    drumMat.userData.night = new THREE.Color('#0b0d14');
 
     const paintMats = new Map();
     const paintFor = (hex) => {
@@ -299,6 +319,7 @@ export function buildWorld(scene, renderer, surfaces = {}) {
         const h = room.height;
         const paint = paintFor(room.paint);
         room.solid = [];
+        room.lights = [];   // pools of light on the floor: { x, z, r }
 
         // Floor: scanned parquet in the galleries, limestone in the public rooms.
         const stone = room.floor === 'stone';
@@ -309,7 +330,7 @@ export function buildWorld(scene, renderer, surfaces = {}) {
             color: '#ffffff',
             map: set.color || null,
             normalMap: set.normal || null,
-            normalScale: new THREE.Vector2(stone ? 0.6 : 0.9, stone ? 0.6 : 0.9),
+            normalScale: new THREE.Vector2(stone ? 0.6 : 0.55, stone ? 0.6 : 0.55),
             roughnessMap: set.rough || null,
             // Parquet's map is near-black (varnish); scale it to a satin finish.
             roughness: set.rough ? (stone ? 0.8 : 5.5) : (stone ? 0.35 : 0.55),
@@ -330,7 +351,21 @@ export function buildWorld(scene, renderer, surfaces = {}) {
         floors.push(floor);
 
         // Ceiling
-        const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(w, d), ceilingMat);
+        let ceilingGeo = new THREE.PlaneGeometry(w, d);
+        if (room.id === 'home') {
+            // Cut the oculus out of the lobby's ceiling.
+            const shape = new THREE.Shape();
+            shape.moveTo(-w / 2, -d / 2);
+            shape.lineTo(w / 2, -d / 2);
+            shape.lineTo(w / 2, d / 2);
+            shape.lineTo(-w / 2, d / 2);
+            shape.closePath();
+            const hole = new THREE.Path();
+            hole.absarc(OCULUS.x - (x1 + x2) / 2, OCULUS.z - (z1 + z2) / 2, OCULUS.r, 0, Math.PI * 2, true);
+            shape.holes.push(hole);
+            ceilingGeo = new THREE.ShapeGeometry(shape, 48);
+        }
+        const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
         ceiling.rotation.x = Math.PI / 2;
         ceiling.position.set((x1 + x2) / 2, h, (z1 + z2) / 2);
         worldUVs(ceiling);
@@ -395,6 +430,7 @@ export function buildWorld(scene, renderer, surfaces = {}) {
 
         // Ceiling light panels, each in a shallow recessed trim.
         const panel = (pw, pd, x, z) => {
+            room.lights.push({ x, z, r: Math.max(pw, pd) * 0.5 + h * 0.62 });
             const p = new THREE.Mesh(new THREE.PlaneGeometry(pw, pd), lightPanelMat);
             p.rotation.x = Math.PI / 2;
             p.position.set(x, h - 0.03, z);
@@ -411,26 +447,88 @@ export function buildWorld(scene, renderer, surfaces = {}) {
                 if (x + 4 < x2 - 2) panel(5, 2.2, x + 4, (z1 + z2) / 2);
             }
         } else if (room.id === 'home') {
-            const oculus = new THREE.Mesh(new THREE.CircleGeometry(4.2, 64), skyMat);
+            // The oculus: a drum rising through the roof to the open sky.
+            const DRUM = 2.2;
+            const drum = new THREE.Mesh(new THREE.CylinderGeometry(OCULUS.r, OCULUS.r, DRUM, 72, 1, true), drumMat);
+            drum.position.set(OCULUS.x, h + DRUM / 2, OCULUS.z);
+            drum.userData.keep = true;
+            group.add(drum);
+            themed.bounce.push(drumMat);
+            const oculus = new THREE.Mesh(new THREE.CircleGeometry(OCULUS.r + 0.02, 72), skyMat);
             oculus.rotation.x = Math.PI / 2;
-            oculus.position.set(-36, h - 0.02, 0);
+            oculus.position.set(OCULUS.x, h + DRUM, OCULUS.z);
+            oculus.userData.keep = true;
             group.add(oculus);
+            // Glazing bars across the opening and a bronze collar around it.
+            const barMat = bronzeMat.clone();
+            barMat.userData.cast = false;
+            for (let i = 0; i < 4; i++) {
+                const bar = box(OCULUS.r * 2, 0.07, 0.07, barMat, OCULUS.x, h + DRUM - 0.25, OCULUS.z);
+                bar.rotation.y = (i * Math.PI) / 4;
+            }
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.1, 32), barMat);
+            hub.position.set(OCULUS.x, h + DRUM - 0.25, OCULUS.z);
+            group.add(hub);
             // Its own material: it must not cast a ring of shadow on the floor.
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(4.35, 0.14, 12, 96), bronzeMat.clone());
-            ring.material.userData.cast = false;
-            ring.rotation.x = Math.PI / 2;
-            ring.position.set(-36, h - 0.06, 0);
-            group.add(ring);
+            for (const [r, y, tube] of [[OCULUS.r + 0.16, h - 0.05, 0.16], [OCULUS.r + 0.55, h - 0.02, 0.05]]) {
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 14, 96), barMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.set(OCULUS.x, y, OCULUS.z);
+                group.add(ring);
+            }
+            room.lights.push({ x: OCULUS.x, z: OCULUS.z, r: 9.5, power: 1.25 });
             for (const [x, z] of [[-46, 0], [-26, -8], [-26, 8], [-46, -8], [-46, 8]]) panel(2.4, 2.4, x, z);
         } else if (room.id === 'contact') {
             for (const z of [-5, 5]) panel(3, 2, 60, z);
         } else {
-            const cols = Math.max(2, Math.round(w / 6));
-            const rows = Math.max(2, Math.round(d / 6));
-            for (let i = 0; i < cols; i++) {
-                for (let j = 0; j < rows; j++) {
-                    panel(1.4, 1.4, x1 + (i + 0.5) * (w / cols), z1 + (j + 0.5) * (d / rows));
-                }
+            // A laylight in the middle: one luminous ceiling behind glazing bars.
+            const cx = (x1 + x2) / 2;
+            const cz = (z1 + z2) / 2;
+            const L = 6.4;
+            const lay = new THREE.Mesh(new THREE.PlaneGeometry(L, L), laylightMat);
+            lay.rotation.x = Math.PI / 2;
+            lay.position.set(cx, h - 0.02, cz);
+            group.add(lay);
+            for (let i = 0; i <= 4; i++) {
+                const o = -L / 2 + (i * L) / 4;
+                const edge = i === 0 || i === 4;
+                box(L + 0.2, edge ? 0.14 : 0.07, edge ? 0.2 : 0.07, corniceMat, cx, h - (edge ? 0.07 : 0.05), cz + o);
+                box(edge ? 0.2 : 0.07, edge ? 0.14 : 0.07, L + 0.2, corniceMat, cx + o, h - (edge ? 0.07 : 0.05), cz);
+            }
+            room.lights.push({ x: cx, z: cz, r: 8.5 });
+            // Track lighting: a rail around the room with a spot on every bay.
+            const inset = 2.5;
+            const ry = h - 0.42;
+            const rx = w / 2 - inset;
+            const rz = d / 2 - inset;
+            box(rx * 2 + 0.05, 0.05, 0.05, railMat, cx, ry, cz - rz);
+            box(rx * 2 + 0.05, 0.05, 0.05, railMat, cx, ry, cz + rz);
+            box(0.05, 0.05, rz * 2 + 0.05, railMat, cx - rx, ry, cz);
+            box(0.05, 0.05, rz * 2 + 0.05, railMat, cx + rx, ry, cz);
+            for (const sx of [-1, 1]) {
+                for (const sz of [-1, 1]) box(0.02, h - ry, 0.02, railMat, cx + sx * rx, (h + ry) / 2, cz + sz * rz);
+            }
+            const yAxis = new THREE.Vector3(0, 1, 0);
+            const spot = (x, z, dx, dz) => {
+                const aim = new THREE.Vector3(dx * 0.62, -0.78, dz * 0.62).normalize();
+                const q = new THREE.Quaternion().setFromUnitVectors(yAxis, aim);
+                const can = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.24, 14), railMat);
+                can.quaternion.copy(q);
+                can.position.set(x, ry - 0.13, z).addScaledVector(aim, 0.06);
+                group.add(can);
+                const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.012, 14), lensMat);
+                lens.quaternion.copy(q);
+                lens.position.copy(can.position).addScaledVector(aim, 0.122);
+                group.add(lens);
+                box(0.03, 0.09, 0.03, railMat, x, ry - 0.05, z);
+            };
+            const bays = 6;
+            for (let i = 0; i < bays; i++) {
+                const t = -1 + (2 * (i + 0.5)) / bays;
+                spot(cx + t * rx, cz - rz, 0, -1);
+                spot(cx + t * rx, cz + rz, 0, 1);
+                spot(cx - rx, cz + t * rz, -1, 0);
+                spot(cx + rx, cz + t * rz, 1, 0);
             }
         }
     }
@@ -443,14 +541,19 @@ export function buildWorld(scene, renderer, surfaces = {}) {
     // Lobby: columns, the runner and the (closed) entrance doors.
     const columnMat = new THREE.MeshStandardMaterial({ color: '#efe9df', roughness: 0.42, normalMap: plaster.normal || null, normalScale: new THREE.Vector2(0.25, 0.25) });
     columnMat.userData.cast = true;
+    // Turned on a lathe: base mouldings, a shaft with entasis, and a capital.
+    const profile = [
+        [0.74, 0.3], [0.78, 0.36], [0.74, 0.43], [0.66, 0.46], [0.69, 0.52], [0.63, 0.58], [0.6, 0.62],
+        [0.6, 1.4], [0.585, 3.2], [0.555, 5.0], [0.53, 6.14],
+        [0.57, 6.18], [0.57, 6.24], [0.53, 6.28], [0.53, 6.4], [0.62, 6.52], [0.71, 6.62], [0.73, 6.7]
+    ].map(([r, y]) => new THREE.Vector2(r, y));
     for (const [x, z] of [[-46, -11], [-46, 11], [-26, -11], [-26, 11]]) {
-        const column = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, HALL_H, 40), columnMat);
-        column.position.set(x, HALL_H / 2, z);
+        const column = new THREE.Mesh(new THREE.LatheGeometry(profile, 56), columnMat);
+        column.position.set(x, 0, z);
         group.add(column);
-        box(1.5, 0.3, 1.5, columnMat, x, 0.15, z);
-        box(1.5, 0.3, 1.5, columnMat, x, HALL_H - 0.15, z);
-        box(1.3, 0.12, 1.3, columnMat, x, 0.36, z);
-        colliders.push({ x, z, r: 0.85 });
+        box(1.6, 0.3, 1.6, columnMat, x, 0.15, z);
+        box(1.6, 0.3, 1.6, columnMat, x, HALL_H - 0.15, z);
+        colliders.push({ x, z, r: 0.9 });
     }
     const wool = surfaces.wool || {};
     const rugMat = new THREE.MeshStandardMaterial({
@@ -480,15 +583,35 @@ export function buildWorld(scene, renderer, surfaces = {}) {
     for (const z of [-0.25, 0.25]) box(0.1, 0.9, 0.06, bronzeMat, -52 + SKIN + 0.16, 2.2, z);
 
     // Benches down the hall.
-    const benchMat = new THREE.MeshStandardMaterial({ color: '#2e2a26', roughness: 0.4, metalness: 0.5 });
+    const benchMat = new THREE.MeshStandardMaterial({ color: '#2a2724', roughness: 0.38, metalness: 0.7 });
     benchMat.userData.cast = true;
-    const benchTop = new THREE.MeshStandardMaterial({ color: '#b07a4a', map: grain, roughness: 0.4 });
+    const benchTop = new THREE.MeshStandardMaterial({ color: '#b98452', map: grain, roughness: 0.42 });
     benchTop.userData.cast = true;
-    for (const x of [-2, 16, 34]) {
-        box(3.2, 0.08, 0.8, benchTop, x, 0.46, 0);
-        box(0.08, 0.42, 0.7, benchMat, x - 1.4, 0.21, 0);
-        box(0.08, 0.42, 0.7, benchMat, x + 1.4, 0.21, 0);
-        colliders.push({ x1: x - 1.6, z1: -0.4, x2: x + 1.6, z2: 0.4 });
+    const leather = new THREE.MeshStandardMaterial({ color: '#3a2f29', roughness: 0.62 });
+    leather.userData.cast = true;
+    /** A bench: a slab of oak on two steel frames, with a leather pad. */
+    const bench = (x, z, len = 3.2) => {
+        const slab = new THREE.Mesh(new RoundedBoxGeometry(len, 0.09, 0.82, 3, 0.03), benchTop);
+        slab.position.set(x, 0.43, z);
+        worldUVs(slab);
+        group.add(slab);
+        const pad = new THREE.Mesh(new RoundedBoxGeometry(len - 0.5, 0.07, 0.66, 3, 0.03), leather);
+        pad.position.set(x, 0.5, z);
+        group.add(pad);
+        for (const sx of [-1, 1]) {
+            const lx = x + sx * (len / 2 - 0.32);
+            box(0.05, 0.38, 0.05, benchMat, lx, 0.19, z - 0.33);
+            box(0.05, 0.38, 0.05, benchMat, lx, 0.19, z + 0.33);
+            box(0.05, 0.04, 0.71, benchMat, lx, 0.02, z);
+            box(0.05, 0.04, 0.71, benchMat, lx, 0.37, z);
+        }
+        colliders.push({ x1: x - len / 2, z1: z - 0.45, x2: x + len / 2, z2: z + 0.45 });
+    };
+    for (const x of [-2, 16, 34]) bench(x, 0);
+    // One in the middle of the galleries that have nothing standing there.
+    for (const id of ['education', 'experience', 'projects', 'tools', 'skills']) {
+        const p = galleryPoint(ROOM_BY_ID[id], 0, 9);
+        bench(p.x, p.z, 3);
     }
 
     // A shaft of daylight from the lobby's oculus.
@@ -497,10 +620,10 @@ export function buildWorld(scene, renderer, surfaces = {}) {
         map: beamTex, color: '#fff3dc', transparent: true, opacity: 0.08, side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
     });
-    shaftMat.userData.day = 0.08;
-    shaftMat.userData.night = 0.015;
+    shaftMat.userData.day = 0.075;
+    shaftMat.userData.night = 0.02;
     themed.glows.push(shaftMat);
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 5.2, HALL_H - 0.1, 48, 1, true), shaftMat);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(OCULUS.r - 0.1, OCULUS.r + 1.1, HALL_H - 0.1, 48, 1, true), shaftMat);
     shaft.rotation.z = Math.PI;  // bright end up, at the oculus
     shaft.position.set(-36, (HALL_H - 0.1) / 2, 0);
     shaft.userData.noPick = true;
@@ -527,7 +650,7 @@ export function buildWorld(scene, renderer, surfaces = {}) {
     const world = {
         group, colliders, floors, themed, surfaces,
         lights: { hemi, key, fill },
-        materials: { trimMat, bronzeMat, columnMat, corniceMat },
+        materials: { trimMat, bronzeMat, columnMat, corniceMat, railMat },
         followShadow(x, z) {
             const step = 36 / 2048;
             const sx = Math.round(x / step) * step;
@@ -553,8 +676,24 @@ export function bakeFloorOcclusion(world) {
         const s = Math.min(28, 1536 / Math.max(w, d));
         const canvas = makeCanvas(w * s, d * s, 1);
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
+        // Dim between the lights, brighter in a pool under each of them.
+        ctx.fillStyle = 'rgb(196,196,196)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalCompositeOperation = 'lighter';
+        for (const light of room.lights || []) {
+            const lx = (light.x - x1) * s;
+            const lz = (light.z - z1) * s;
+            const r = light.r * s;
+            const v = Math.round(52 * (light.power || 1));
+            const m = Math.round(v * 0.6);
+            const grad = ctx.createRadialGradient(lx, lz, 0, lx, lz, r);
+            grad.addColorStop(0, `rgb(${v},${v},${v})`);
+            grad.addColorStop(0.45, `rgb(${m},${m},${m})`);
+            grad.addColorStop(1, 'rgb(0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(lx - r, lz - r, r * 2, r * 2);
+        }
+        ctx.globalCompositeOperation = 'source-over';
         const reach = 1.1 * s;
         for (const piece of room.solid) {
             const a = (piece.a - (piece.side === 'N' || piece.side === 'S' ? x1 : z1)) * s;
@@ -614,9 +753,10 @@ export function bakeFloorOcclusion(world) {
 function mergeStatic(group) {
     const buckets = new Map();
     for (const mesh of [...group.children]) {
-        if (!mesh.isMesh || mesh.userData.floor || mesh.userData.noPick) continue;
+        if (!mesh.isMesh || mesh.userData.floor || mesh.userData.noPick || mesh.userData.keep) continue;
         mesh.updateMatrix();
-        const geo = mesh.geometry.clone();
+        // Geometries come indexed and not (rounded boxes): merge them all unindexed.
+        const geo = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
         geo.applyMatrix4(mesh.matrix);
         if (!buckets.has(mesh.material)) buckets.set(mesh.material, []);
         buckets.get(mesh.material).push(geo);
@@ -624,6 +764,11 @@ function mergeStatic(group) {
         mesh.geometry.dispose();
     }
     for (const [material, geos] of buckets) {
+        // Only the attributes every piece has can be merged.
+        const shared = Object.keys(geos[0].attributes).filter((name) => geos.every((g) => g.attributes[name]));
+        for (const g of geos) {
+            for (const name of Object.keys(g.attributes)) if (!shared.includes(name)) g.deleteAttribute(name);
+        }
         const merged = mergeGeometries(geos, false);
         geos.forEach((g) => g.dispose());
         if (!merged) continue;
@@ -671,5 +816,11 @@ export function applyWorldTheme(world, scene, theme) {
     }
     for (const mat of world.themed.bounce || []) {
         mat.emissive.copy(night ? mat.userData.night : mat.userData.day);
+    }
+    const sky = world.themed.sky;
+    if (sky) {
+        sky.mat.map = night ? sky.night : sky.day;
+        sky.mat.color.setScalar(night ? 1 : 1.3);
+        sky.mat.needsUpdate = true;
     }
 }

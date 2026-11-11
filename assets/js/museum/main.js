@@ -2,6 +2,9 @@
 
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { loadAllData } from './data.js';
 import { ROOMS, ROOM_BY_ID, roomAt, buildWorld, applyWorldTheme, loadSurfaces, bakeFloorOcclusion } from './world.js';
 import { Museum } from './exhibits.js';
@@ -9,6 +12,7 @@ import { Visitors } from './visitors.js';
 import { Controls } from './controls.js';
 import { Panels, controlsHelp, closeLightbox } from './panels.js';
 import { createPipeline } from './post.js';
+import { createFloorReflection } from './reflect.js';
 import { drawFloorPlan, PAINT } from './art.js';
 import { escapeHtml } from './util.js';
 
@@ -17,11 +21,12 @@ const HASH_ALIASES = { software: 'tools', awards: 'certifications' };
 // Number keys jump between rooms, in the order of the top bar.
 const ROOM_KEYS = ['home', 'education', 'experience', 'publications', 'projects', 'skills', 'tools', 'certifications', 'activities', 'contact'];
 
-/** High: bloom, shadows, sharper textures. Low: for phones and small GPUs. */
+/** High: bloom, shadows, mirrored floors, sharper textures. Low: for phones and small GPUs. */
 const QUALITY = {
-    high: { pixelRatio: 1.5, bloom: true, shadows: true, paintScale: 1.75, imagePxPerM: 760, visitors: 10 },
-    low: { pixelRatio: 1.25, bloom: false, shadows: false, paintScale: 1.15, imagePxPerM: 440, visitors: 5 }
+    high: { pixelRatio: 1.5, bloom: true, shadows: true, reflections: true, paintScale: 1.75, imagePxPerM: 760, visitors: 10 },
+    low: { pixelRatio: 1.25, bloom: false, shadows: false, reflections: false, paintScale: 1.15, imagePxPerM: 440, visitors: 5 }
 };
+const CALM = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -80,6 +85,17 @@ async function main() {
 
     let pipeline = q.bloom ? createPipeline(renderer, scene, camera) : null;
 
+    // Polished floors mirror the room (high quality only).
+    const reflection = createFloorReflection(renderer, scene, camera, world.floors);
+    for (const floor of world.floors) {
+        const stone = floor.userData.room.floor === 'stone';
+        floor.material.userData.env = floor.material.envMapIntensity;
+        reflection.patch(floor.material, stone ? { strength: 0.7, blur: 1.4, specular: 0.25 } : { strength: 0.42, blur: 2.4, specular: 0.3 });
+    }
+
+    // Brackets that close around the work under the pointer.
+    const highlight = createHighlight(scene);
+
     const floorRing = new THREE.Mesh(
         new THREE.RingGeometry(0.2, 0.28, 40),
         new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.75, depthWrite: false, toneMapped: false })
@@ -115,6 +131,7 @@ async function main() {
     }
 
     const controls = new Controls(camera, canvas, world.colliders, {
+        calm: CALM,
         onClick: (x, y) => {
             const hit = pick(x, y);
             if (!hit) return;
@@ -160,12 +177,14 @@ async function main() {
         const h = hoverPending;
         hoverPending = null;
         if (!h || controls.glide || controls.pointer) {
+            setHover(null);
             tip.hidden = true;
             if (floorRing.visible) { floorRing.visible = false; requestRender(); }
             canvas.style.cursor = '';
             return;
         }
         const hit = pick(h.x, h.y);
+        setHover(hit?.exhibit || null);
         if (hit?.exhibit) {
             const text = hoverText(hit.exhibit);
             tip.hidden = false;
@@ -183,9 +202,21 @@ async function main() {
         floorRing.visible = showRing;
     }
 
+    // The brackets follow the pointer; with a panel open they stay on its work.
+    let hovered = null;
+    function setHover(exhibit) {
+        hovered = exhibit;
+        refreshHighlight();
+    }
+    function refreshHighlight() {
+        if (highlight.show(hovered || (panels?.isOpen ? panels.current : null), shown)) requestRender();
+    }
+
     // Panels and navigation.
     const panels = new Panels({
         data, museum,
+        onStep: (exhibit) => goToExhibit(exhibit, { open: true }),
+        onChange: () => refreshHighlight(),
         onNavigate: (roomId) => goToRoom(roomId),
         onShowExhibit: (exhibit) => {
             if (window.matchMedia('(max-width: 760px)').matches) panels.close();
@@ -316,14 +347,17 @@ async function main() {
     $('btn-catalogue').addEventListener('click', openCatalogue);
     $('btn-map').addEventListener('click', () => minimap.toggle());
     $('btn-help').addEventListener('click', () => toggleHelp());
-    $('btn-quality').addEventListener('click', () => setQuality(state.quality === 'high' ? 'low' : 'high', true));
-    $('theme-toggle-btn').addEventListener('click', () => {
-        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.querySelectorAll('[data-quality-set]').forEach((btn) => btn.addEventListener('click', () => {
+        if (btn.dataset.qualitySet !== state.quality) setQuality(btn.dataset.qualitySet, true);
+    }));
+    document.querySelectorAll('[data-theme-set]').forEach((btn) => btn.addEventListener('click', () => {
+        const next = btn.dataset.themeSet;
+        if (next === document.documentElement.dataset.theme) return;
         setTheme(next, true);
         applyWorldTheme(world, scene, next);
         minimap.draw(true);
         requestRender();
-    });
+    }));
     $('lightbox').addEventListener('click', (ev) => {
         if (ev.target.closest('button') || ev.target === $('lightbox')) closeLightbox();
     });
@@ -342,6 +376,8 @@ async function main() {
             if (ev.code === 'KeyC') openCatalogue();
             if (ev.code === 'KeyH' || ev.key === '?') toggleHelp();
             if (ev.code === 'KeyV' && state.room === 'activities') museum.toggleCollabView();
+            if (ev.code === 'KeyN' && panels.isOpen) panels.step(1);
+            if (ev.code === 'KeyP' && panels.isOpen) panels.step(-1);
             const digit = /^Digit(\d)$/.exec(ev.code);
             if (digit) {
                 const id = ROOM_KEYS[(Number(digit[1]) + 9) % 10];
@@ -361,6 +397,10 @@ async function main() {
         PAINT.scale = cfg.paintScale;
         museum.pxPerM = cfg.imagePxPerM;
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cfg.pixelRatio));
+        reflection.enabled = cfg.reflections;
+        for (const floor of world.floors) {
+            floor.material.envMapIntensity = floor.material.userData.env * (cfg.reflections ? 0.3 : 1);
+        }
         if (cfg.bloom && !pipeline) pipeline = createPipeline(renderer, scene, camera);
         if (!cfg.bloom && pipeline) {
             pipeline.dispose();
@@ -371,10 +411,9 @@ async function main() {
         scene.traverse((o) => {
             if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; });
         });
-        const btn = $('btn-quality');
-        btn.setAttribute('aria-pressed', String(mode === 'high'));
-        btn.title = mode === 'high' ? 'Graphics: high (click for faster)' : 'Graphics: fast (click for high quality)';
-        btn.classList.toggle('is-low', mode === 'low');
+        document.querySelectorAll('[data-quality-set]').forEach((btn) => {
+            btn.setAttribute('aria-pressed', String(btn.dataset.qualitySet === mode));
+        });
         if (persist) safeSet('museum-quality', mode);
         resize();
     }
@@ -388,6 +427,9 @@ async function main() {
         camera.fov = w / h < 0.8 ? 78 : 70;
         camera.updateProjectionMatrix();
         pipeline?.setSize(w, h);
+        const buffer = renderer.getDrawingBufferSize(new THREE.Vector2());
+        reflection.setSize(buffer.x, buffer.y);
+        highlight.setSize(w, h);
         museum.setViewport(h * renderer.getPixelRatio(), camera.fov);
         requestRender();
     }
@@ -414,10 +456,17 @@ async function main() {
         }
         if (museum.animate(now / 1000, dt, controls.x, controls.z)) state.needsRender = true;
         if (visitors?.update(now / 1000, dt, controls.x, controls.z)) state.needsRender = true;
+        if (highlight.update(now / 1000, dt)) state.needsRender = true;
         if (state.needsRender) {
             state.needsRender = false;
+            if (reflection.enabled) {
+                // The mirrored pass refreshes the shadow map; the main pass reuses it.
+                reflection.render();
+                renderer.shadowMap.autoUpdate = false;
+            }
             if (pipeline) pipeline.render();
             else renderer.render(scene, camera);
+            renderer.shadowMap.autoUpdate = true;
         }
         requestAnimationFrame(frame);
     }
@@ -435,7 +484,11 @@ async function main() {
         tick();
     });
     setProgress(1, 'Welcome');
+    // Arriving through the front doors: a slow walk in as the loader lifts.
+    const arrival = startRoom.id === 'home' && !CALM;
+    if (arrival) controls.setPose({ ...startRoom.spawn, x: startRoom.spawn.x + 3.4 * Math.sin(startRoom.spawn.yaw), pitch: 0.16 });
     enter();
+    if (arrival) controls.glideTo({ ...startRoom.spawn, pitch: 0 }, 3.6);
     const people = new Visitors({ scene, museum, world, count: QUALITY[state.quality].visitors });
     people.load().then(() => { visitors = people; }).catch((error) => console.warn('Visitors could not load', error));
 
@@ -480,6 +533,85 @@ function pathClear(colliders, a, b) {
     return true;
 }
 
+/**
+ * Corner brackets drawn around an exhibit: eight corners of its bounding box,
+ * a short stroke along each edge. Brighter than white, so they bloom a little.
+ */
+function createHighlight(scene) {
+    const positions = new Float32Array(8 * 3 * 2 * 3);
+    const geometry = new LineSegmentsGeometry();
+    geometry.setPositions(positions);
+    // Fat lines: a stroke a few pixels wide whatever the distance.
+    const material = new LineMaterial({ color: 0xffffff, linewidth: 2.5, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
+    material.color.setRGB(2.3, 2.3, 2.4);
+    const lines = new LineSegments2(geometry, material);
+    lines.frustumCulled = false;
+    lines.visible = false;
+    lines.userData.noPick = true;
+    lines.renderOrder = 5;
+    scene.add(lines);
+    const box = new THREE.Box3();
+    const part = new THREE.Box3();
+    let id = null;
+    let target = 0;
+    let alpha = 0;
+    let pulse = 0;
+
+    function fit(exhibit, shown) {
+        box.makeEmpty();
+        for (const mesh of exhibit.meshes || []) {
+            if (!mesh.isMesh || !shown(mesh)) continue;
+            if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+            mesh.updateWorldMatrix(true, false);
+            box.union(part.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld));
+        }
+        if (box.isEmpty()) return false;
+        box.expandByScalar(0.05);
+        const { min, max } = box;
+        const size = [max.x - min.x, max.y - min.y, max.z - min.z];
+        const reach = size.map((s) => Math.min(0.22, s * 0.28));
+        let i = 0;
+        for (let c = 0; c < 8; c++) {
+            const corner = [c & 1 ? max.x : min.x, c & 2 ? max.y : min.y, c & 4 ? max.z : min.z];
+            for (let axis = 0; axis < 3; axis++) {
+                const end = corner.slice();
+                end[axis] += (c & (1 << axis) ? -1 : 1) * reach[axis];
+                positions.set(corner, i);
+                positions.set(end, i + 3);
+                i += 6;
+            }
+        }
+        geometry.setPositions(positions);
+        return true;
+    }
+
+    return {
+        setSize(w, h) {
+            material.resolution.set(w, h);
+        },
+        /** Point the brackets at an exhibit (or nothing). True when that changed. */
+        show(exhibit, shown) {
+            const next = exhibit && !exhibit.noHighlight ? exhibit.id : null;
+            if (next === id) return false;
+            id = next;
+            target = next && fit(exhibit, shown) ? 1 : 0;
+            if (target) pulse = 0;
+            return true;
+        },
+        update(t, dt) {
+            if (alpha === target && !target) return false;
+            alpha += (target - alpha) * (1 - Math.exp(-dt * 12));
+            if (Math.abs(target - alpha) < 0.004) alpha = target;
+            pulse += dt;
+            lines.visible = alpha > 0.004;
+            // Two soft pulses as it lands, then it holds still (and stops asking for frames).
+            const settle = CALM ? 0 : Math.exp(-pulse * 1.1);
+            material.opacity = alpha * (0.86 + 0.14 * Math.cos(pulse * 6) * settle);
+            return alpha !== target || (lines.visible && settle > 0.02);
+        }
+    };
+}
+
 function createMinimap(canvas, controls, onRoom) {
     const ctx = canvas.getContext('2d');
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -490,6 +622,7 @@ function createMinimap(canvas, controls, onRoom) {
     let base = null;
     let geometry = null;
     let lastKey = '';
+    let dark = true;
     const wrap = canvas.closest('.minimap');
 
     function drawBase() {
@@ -498,7 +631,8 @@ function createMinimap(canvas, controls, onRoom) {
         off.height = H * dpr;
         const octx = off.getContext('2d');
         octx.scale(dpr, dpr);
-        geometry = drawFloorPlan(octx, ROOMS, W, H, { dark: true, highlight: null, labels: 'mini', pad: 0.04 });
+        dark = document.documentElement.dataset.theme === 'dark';
+        geometry = drawFloorPlan(octx, ROOMS, W, H, { dark, mono: true, highlight: null, labels: 'mini', pad: 0.04 });
         base = off;
     }
 
@@ -516,21 +650,21 @@ function createMinimap(canvas, controls, onRoom) {
             const [x1, z1, x2, z2] = room.rect;
             const [ax, ay] = geometry.map(x1, z1);
             const [bx, by] = geometry.map(x2, z2);
-            ctx.fillStyle = 'rgba(232,194,122,0.28)';
+            ctx.fillStyle = dark ? 'rgba(255,255,255,0.2)' : 'rgba(20,22,26,0.16)';
             ctx.fillRect(ax, ay, bx - ax, by - ay);
         }
         const [px, py] = geometry.map(controls.x, controls.z);
         const fx = -Math.sin(controls.yaw);
         const fz = -Math.cos(controls.yaw);
         const ang = Math.atan2(fz, fx);
-        ctx.fillStyle = 'rgba(232,194,122,0.35)';
+        ctx.fillStyle = dark ? 'rgba(255,255,255,0.3)' : 'rgba(20,22,26,0.22)';
         ctx.beginPath();
         ctx.moveTo(px, py);
         ctx.arc(px, py, 16, ang - 0.6, ang + 0.6);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#e8c27a';
-        ctx.strokeStyle = '#1a1a1a';
+        ctx.fillStyle = dark ? '#ffffff' : '#17181b';
+        ctx.strokeStyle = dark ? '#17181b' : '#ffffff';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(px, py, 4, 0, Math.PI * 2);
@@ -572,7 +706,7 @@ function buildCatalogue(museum, onPick) {
     const groups = order.map((id) => ({ room: ROOM_BY_ID[id], items: museum.exhibits.filter((x) => x.room === id && x.catalogue !== false) }))
         .filter((g) => g.items.length);
     list.innerHTML = groups.map((g) => `
-        <section class="cat-room" data-cat-room="${g.room.id}" style="--room-accent:${escapeHtml(g.room.accent || '#b08d57')}">
+        <section class="cat-room" data-cat-room="${g.room.id}" style="--room-accent:${escapeHtml(g.room.accent || '#8a8f98')}">
             <h2><span>${g.room.numeral ? `Gallery ${g.room.numeral}` : g.room.id === 'hall' ? 'Grand Hall' : g.room.title}</span>${escapeHtml(g.room.title)} <small>${escapeHtml(g.room.tagline || '')}</small></h2>
             <ul>${g.items.map((x) => `
                 <li data-search="${escapeHtml(`${x.title} ${x.subtitle || ''}`.toLowerCase())}">
@@ -622,7 +756,7 @@ function showToast(room) {
     toast.querySelector('.toast-eyebrow').textContent = room.numeral ? `Gallery ${room.numeral}` : room.id === 'hall' ? 'Galleries I – VIII' : 'Welcome';
     toast.querySelector('.toast-title').textContent = room.title;
     toast.querySelector('.toast-sub').textContent = room.tagline || '';
-    toast.style.setProperty('--room-accent', room.accent || '#e8c27a');
+    toast.style.setProperty('--room-accent', room.accent || '#9aa0a8');
     toast.classList.add('is-on');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.remove('is-on'), 2600);
@@ -654,10 +788,10 @@ function initTheme() {
 
 function setTheme(theme, persist) {
     document.documentElement.dataset.theme = theme;
-    const btn = $('theme-toggle-btn');
-    btn?.setAttribute('aria-pressed', String(theme === 'dark'));
-    btn?.setAttribute('title', theme === 'dark' ? 'Turn the lights on (day)' : 'Turn the lights down (night)');
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b0c10' : '#2563eb');
+    document.querySelectorAll('[data-theme-set]').forEach((btn) => {
+        btn.setAttribute('aria-pressed', String(btn.dataset.themeSet === theme));
+    });
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b0c0e' : '#e9eaec');
     if (persist) safeSet('preferred-theme', theme);
 }
 

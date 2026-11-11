@@ -4,9 +4,12 @@
 // A cast of realistic Rocketbox people (assets/museum/people, built by
 // scripts/build-visitors.py) shares one skeleton and a set of motion-captured
 // clips: a walk, a standing idle, a look-around and a take-picture. Each person
-// walks at the pace of their own stride, so feet never slide. Paths run over
-// a coarse walkable grid in each room, through the doors and along the Grand
-// Hall; a route that cannot be planned is never walked through a wall.
+// has their own pace; they ease up to it and down from it, slow for corners
+// and as they arrive, and the walk cycle always plays at the speed the body
+// is actually moving, so feet do not slide. Paths run over a coarse walkable
+// grid in each room, through the doors and along the Grand Hall, and are then
+// pulled taut so nobody zigzags from grid point to grid point; a route that
+// cannot be planned is never walked through a wall.
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -18,6 +21,13 @@ const DIR = 'assets/museum/people/';
 const ACTIVE_RADIUS = 34;          // animate people this close to the visitor
 const RADIUS = 0.32;               // personal space, for paths and collisions
 const BLEND = 4;                   // how fast one motion gives way to another (1/s)
+const ACCEL = 2.2;                 // m/s2 setting off
+const BRAKE = 3.4;                 // m/s2 pulling up
+const TURN = 3.2;                  // rad/s at most, while walking
+const CORNER = 0.55;               // start turning this far before a corner (m)
+
+/** Signed shortest turn from one heading to another. */
+const turnTo = (from, to) => ((to - from + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
 
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
@@ -113,7 +123,7 @@ export class Visitors {
             index, root, model, mixer, actions, bones, camera, collider, sex,
             speed: stride * (0.92 + Math.random() * 0.12), stride,
             weights: { walk: 0, idle: 1, look: 0, photo: 0 },
-            x: 0, z: 0, yaw: 0, mode: 'look', activity: 'idle', timer: 2 + Math.random() * 6,
+            x: 0, z: 0, yaw: 0, v: 0, lean: 0, mode: 'look', activity: 'idle', timer: 2 + Math.random() * 6,
             path: [], target: null, wait: 0, raised: 0, flashed: false, flash: 0
         };
         // Start somewhere in the museum, already looking at a work.
@@ -286,7 +296,10 @@ export class Visitors {
     plan(from, to) {
         const a = roomAt(from.x, from.z) || ROOM_BY_ID.hall;
         const b = roomAt(to.x, to.z) || ROOM_BY_ID.hall;
-        if (a === b) return this.route(a, from, to);
+        if (a === b) {
+            const direct = this.route(a, from, to);
+            return direct && this.taut(from, direct);
+        }
         const hall = ROOM_BY_ID.hall;
         const legs = [];
         let at = from;
@@ -301,7 +314,26 @@ export class Visitors {
         } else {
             legs.push(this.route(hall, at, to));
         }
-        return legs.some((leg) => !leg) ? null : legs.flat();
+        return legs.some((leg) => !leg) ? null : this.taut(from, legs.flat());
+    }
+
+    /**
+     * Pull a path taut: drop every point that can be skipped in a straight,
+     * clear line, so a walk across a room is a few long strides, not a
+     * staircase of grid steps.
+     */
+    taut(from, path) {
+        const out = [];
+        let at = from;
+        let i = 0;
+        while (i < path.length) {
+            let j = Math.min(path.length - 1, i + 6);
+            while (j > i && !this.lineClear(at, path[j], RADIUS + 0.12)) j -= 1;
+            out.push(path[j]);
+            at = path[j];
+            i = j + 1;
+        }
+        return out;
     }
 
     /** A random work, choosing the room first so busy walls don't draw everyone. */
@@ -356,6 +388,7 @@ export class Visitors {
         p.mode = 'look';
         p.timer = seconds;
         p.moving = false;
+        p.v = 0;
         const roll = Math.random();
         p.plans = roll < 0.5 ? ['photo'] : roll < 0.75 ? ['look'] : [];
         p.nextActivity = 1 + Math.random() * 2;
@@ -392,6 +425,9 @@ export class Visitors {
                     p.path = next.path;
                     p.mode = 'walk';
                     p.wait = 0;
+                    p.v = 0;
+                    // Set off on a planted foot rather than mid-stride.
+                    if (p.weights.walk < 0.05) p.actions.walk.time = 0;
                 } else {
                     p.timer = 2;
                 }
@@ -401,7 +437,12 @@ export class Visitors {
         // Walking: give way to the visitor and to other people, then follow the path.
         const next = p.path[0];
         if (!next) {
-            this.arrive(p, 6 + Math.random() * 6);
+            // Come to rest before turning to the work.
+            p.v = Math.max(0, p.v - BRAKE * dt);
+            if (p.v < 0.05) {
+                p.v = 0;
+                this.arrive(p, 6 + Math.random() * 6);
+            }
             return;
         }
         const dx = next.x - p.x;
@@ -413,46 +454,76 @@ export class Visitors {
             const d = Math.hypot(tx, tz);
             return d < range && (tx * dx + tz * dz) / (d * (dist || 1) + 1e-6) > 0.4;
         };
-        const blocked = ahead(px, pz, 1.2) || this.people.some((o) => o !== p && ahead(o.x, o.z, 0.95));
-        if (blocked) {
+        // Someone in the way: slow early, stop short.
+        const near = ahead(px, pz, 1.2) || this.people.some((o) => o !== p && ahead(o.x, o.z, 0.95));
+        const close = near || ahead(px, pz, 2.2) || this.people.some((o) => o !== p && ahead(o.x, o.z, 1.7));
+        if (near) {
             p.wait += dt;
-            p.moving = false;
             if (p.wait > 3 + p.index * 0.3) {
                 // Give up on this one and choose again from here.
+                p.v = 0;
                 this.arrive(p, 0.5);
                 p.plans = [];
+                return;
             }
-            return;
+        } else {
+            p.wait = 0;
         }
-        p.wait = 0;
-        p.moving = true;
-        if (dist < 0.2) {
+
+        // How fast to go: full pace on the straight, slower into a turn, and
+        // easing down over the last metre and a half.
+        const heading = Math.atan2(dx, dz);
+        const off = Math.abs(turnTo(p.yaw, heading));
+        let left = dist;
+        for (let k = 1; k < p.path.length; k++) left += Math.hypot(p.path[k].x - p.path[k - 1].x, p.path[k].z - p.path[k - 1].z);
+        let want = p.speed * clamp(1.15 - off / 1.5, 0.12, 1);
+        want = Math.min(want, Math.sqrt(2 * BRAKE * 0.55 * Math.max(0, left - 0.05)) + 0.12);
+        if (close) want *= 0.5;
+        if (near) want = 0;
+        p.v += clamp(want - p.v, -BRAKE * dt, ACCEL * dt);
+        p.moving = p.v > 0.04;
+
+        // Round the corner: once close to a point, aim for the one after it.
+        const last = p.path.length === 1;
+        if (dist < (last ? 0.06 : CORNER)) {
             p.path.shift();
-            return;
+            if (last) return;
         }
-        const step = Math.min(dist, p.speed * dt);
-        p.x += (dx / dist) * step;
-        p.z += (dz / dist) * step;
-        p.wantYaw = Math.atan2(dx, dz);
+        const step = Math.min(dist, p.v * dt);
+        if (dist > 1e-4) {
+            p.x += (dx / dist) * step;
+            p.z += (dz / dist) * step;
+        }
+        p.wantYaw = heading;
     }
 
     animate(p, dt) {
-        const walking = p.mode === 'walk' && p.moving;
-        const want = p.mode === 'look' || !walking
-            ? Math.atan2(p.target.focus.x - p.x, p.target.focus.z - p.z)
-            : p.wantYaw ?? p.yaw;
-        const d = ((want - p.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
-        p.yaw += d * (1 - Math.exp(-dt * (walking ? 7 : 2.5)));
+        const walking = p.mode === 'walk' && p.v > 0.04;
+        const want = walking
+            ? p.wantYaw ?? p.yaw
+            : Math.atan2(p.target.focus.x - p.x, p.target.focus.z - p.z);
+        // Turn at a human rate: quick to start, never a snap.
+        const d = turnTo(p.yaw, want);
+        const turn = clamp(d * (walking ? 6 : 2.5), -TURN, TURN) * dt;
+        p.yaw += Math.abs(turn) > Math.abs(d) ? d : turn;
 
-        // Exactly one motion leads at a time; the others fade out.
+        // Exactly one motion leads at a time; the others fade out. The walk
+        // comes in with the speed itself, so a slow first step is a small one.
         const lead = walking ? 'walk' : p.activity;
         const k = 1 - Math.exp(-dt * BLEND);
+        const pace = clamp(p.v / (p.speed * 0.55), 0, 1);
         for (const [name, action] of Object.entries(p.actions)) {
-            p.weights[name] += ((name === lead ? 1 : 0) - p.weights[name]) * k;
+            const goal = name === 'walk' ? (walking ? pace : 0) : name === lead ? 1 : walking && name === 'idle' ? 1 - pace : 0;
+            p.weights[name] += (goal - p.weights[name]) * (name === 'walk' || name === 'idle' ? 1 - Math.exp(-dt * 9) : k);
             action.setEffectiveWeight(p.weights[name]);
         }
-        p.actions.walk.setEffectiveTimeScale(p.speed / p.stride);
+        // The cycle keeps time with the ground covered; below a shuffle it
+        // would freeze mid-stride, so it never drops under half speed.
+        p.actions.walk.setEffectiveTimeScale(Math.max(0.5, p.v / p.stride));
         p.mixer.update(dt);
+        // Lean a touch into turns, the way people bank through a corner.
+        const bank = walking && !this.calm ? clamp(-turn / Math.max(dt, 1e-4), -TURN, TURN) * 0.018 * pace : 0;
+        p.lean += (bank - p.lean) * (1 - Math.exp(-dt * 5));
         this.place(p);
         this.holdCamera(p, dt);
     }
@@ -495,6 +566,6 @@ export class Visitors {
     place(p) {
         p.root.visible = true;
         p.root.position.set(p.x, 0, p.z);
-        p.root.rotation.y = p.yaw;
+        p.root.rotation.set(0, p.yaw, p.lean || 0, 'YXZ');
     }
 }
