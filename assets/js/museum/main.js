@@ -15,16 +15,23 @@ import { createPipeline } from './post.js';
 import { createFloorReflection } from './reflect.js';
 import { drawFloorPlan, PAINT } from './art.js';
 import { escapeHtml } from './util.js';
+import { NavGrid, pathLength } from './nav.js';
+import { Companions } from './companions.js';
+import { MuseumAudio } from './audio.js';
 
 const HOME_TITLE = 'Saddiq Ur Rehman, PhD in Architecture, Kyung Hee University';
 const HASH_ALIASES = { software: 'tools', awards: 'certifications' };
 // Number keys jump between rooms, in the order of the top bar.
 const ROOM_KEYS = ['home', 'education', 'experience', 'publications', 'projects', 'skills', 'tools', 'certifications', 'activities', 'contact'];
 
-/** High: bloom, shadows, mirrored floors, sharper textures. Low: for phones and small GPUs. */
+/**
+ * High: bloom, soft shadows, mirrored floors, sharper textures, a full house.
+ * Fast: for phones and small GPUs: no post-processing, shadows or mirror
+ * pass, lighter textures, a lower resolution and fewer visitors.
+ */
 const QUALITY = {
-    high: { pixelRatio: 1.5, bloom: true, shadows: true, reflections: true, paintScale: 1.75, imagePxPerM: 760, visitors: 10 },
-    low: { pixelRatio: 1.25, bloom: false, shadows: false, reflections: false, paintScale: 1.15, imagePxPerM: 440, visitors: 5 }
+    high: { pixelRatio: 1.5, bloom: true, shadows: true, reflections: true, paintScale: 1.75, imagePxPerM: 760, visitors: 10, shadowMap: 2048 },
+    low: { pixelRatio: 1.0, bloom: false, shadows: false, reflections: false, paintScale: 1.15, imagePxPerM: 440, visitors: 4, shadowMap: 1024 }
 };
 const CALM = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
 
@@ -46,7 +53,8 @@ queueMicrotask(() => main().catch((error) => {
 async function main() {
     initTheme();
     if (!webglAvailable()) {
-        showFatal('Your browser cannot display the 3D museum (WebGL is unavailable).');
+        showFatal('Your browser cannot display the 3D museum (WebGL is unavailable). Everything in it is listed below.');
+        loadAllData().then(renderTextPortfolio).catch(() => {});
         return;
     }
     state.quality = initialQuality();
@@ -66,10 +74,12 @@ async function main() {
     renderer.toneMapping = THREE.NoToneMapping;
     renderer.shadowMap.enabled = q.shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // The XR demonstrations reveal models with clipping planes.
+    renderer.localClippingEnabled = true;
     const scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 160);
+    const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 160);
     const requestRender = () => { state.needsRender = true; };
 
     setProgress(0.28, 'Laying the floors…');
@@ -81,17 +91,27 @@ async function main() {
     museum.pxPerM = q.imagePxPerM;
     museum.build();
     bakeFloorOcclusion(world);
+    // Where the visitor (and the museum's residents) can walk.
+    const nav = new NavGrid(world.colliders);
+    settleViews(museum, nav);
     setProgress(0.6, 'Hanging the artworks…');
 
     let pipeline = q.bloom ? createPipeline(renderer, scene, camera) : null;
 
-    // Polished floors mirror the room (high quality only).
+    // Polished floors mirror the room (high quality only): honed stone and
+    // satin varnish, so the reflection is soft and only strong at a glance.
     const reflection = createFloorReflection(renderer, scene, camera, world.floors);
     for (const floor of world.floors) {
         const stone = floor.userData.room.floor === 'stone';
         floor.material.userData.env = floor.material.envMapIntensity;
-        reflection.patch(floor.material, stone ? { strength: 0.7, blur: 1.4, specular: 0.25 } : { strength: 0.42, blur: 2.4, specular: 0.3 });
+        reflection.patch(floor.material, stone ? { strength: 0.42, blur: 2.0, specular: 0.3 } : { strength: 0.24, blur: 2.8, specular: 0.35 });
     }
+
+    const frustum = new THREE.Frustum();
+    const viewProj = new THREE.Matrix4();
+    museum.frustum = frustum;
+    const residents = new Companions({ scene, world, nav, museum, calm: CALM });
+    let audio = null;
 
     // Brackets that close around the work under the pointer.
     const highlight = createHighlight(scene);
@@ -120,14 +140,36 @@ async function main() {
         pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
         raycaster.setFromCamera(pointer, camera);
         const hits = raycaster.intersectObjects(pickTargets, true);
+        // An invisible box around a demonstration is an easy target, but it
+        // must not hide the model's own elements from a direct click.
+        let proxy = null;
         for (const hit of hits) {
-            if (hit.object.userData.noPick || hit.object.isPoints || hit.object.isLine || !shown(hit.object)) continue;
-            if (hit.distance > 40) return null;
-            if (hit.object.userData.exhibitId) return { exhibit: museum.byId.get(hit.object.userData.exhibitId), point: hit.point };
-            if (hit.object.userData.floor) return { floor: true, point: hit.point };
+            const o = hit.object;
+            if (o.userData.noPick || o.isPoints || o.isLine || !shown(o)) continue;
+            if (hit.distance > 40) break;
+            const id = o.userData.exhibitId;
+            if (o.userData.proxy) {
+                proxy = proxy || { exhibit: museum.byId.get(id), point: hit.point };
+                continue;
+            }
+            if (proxy && id !== proxy.exhibit?.id) return proxy;
+            if (id) return { exhibit: museum.byId.get(id), point: hit.point, hit };
+            if (o.userData.floor) return { floor: true, point: hit.point };
             return null;
         }
-        return null;
+        return proxy;
+    }
+
+    /** Walk somewhere along a planned path; fall back to a fade when it is far or blocked. */
+    async function walkTo(target, { yaw, pitch, lookAlong = false, maxWalk = 46 } = {}) {
+        const path = nav.findPath({ x: controls.x, z: controls.z }, target);
+        if (!path || pathLength(path) > maxWalk) {
+            await teleport({ x: target.x, z: target.z, yaw: yaw ?? controls.yaw, pitch: pitch ?? controls.pitch });
+            return true;
+        }
+        const smooth = nav.smooth(path);
+        const turns = smooth.length > 2;
+        return controls.followPath(smooth, { yaw, pitch, lookAlong: lookAlong || turns });
     }
 
     const controls = new Controls(camera, canvas, world.colliders, {
@@ -135,15 +177,21 @@ async function main() {
         onClick: (x, y) => {
             const hit = pick(x, y);
             if (!hit) return;
+            audio?.unlock();
             if (hit.exhibit) {
+                // A BIM element inside a demonstration: its properties, over the demo's panel.
+                const element = hit.hit?.object.userData.bimEls && hit.exhibit.payload?.model?.pick?.(hit.hit);
+                if (element) {
+                    panels.open(hit.exhibit);
+                    panels.open({ id: `${hit.exhibit.id}-element`, room: hit.exhibit.room, kind: 'bimElement', title: element.name, payload: element, virtual: true, view: hit.exhibit.view, noHighlight: true }, { push: true });
+                    return;
+                }
                 goToExhibit(hit.exhibit, { open: true });
             } else if (hit.floor) {
-                const target = { x: hit.point.x, z: hit.point.z, yaw: controls.yaw, pitch: Math.max(-0.2, Math.min(0.2, controls.pitch)) };
-                const dist = Math.hypot(target.x - controls.x, target.z - controls.z);
-                const k = Math.max(0, dist - 0.2) / Math.max(dist, 1e-6);
-                target.x = controls.x + (target.x - controls.x) * k;
-                target.z = controls.z + (target.z - controls.z) * k;
-                controls.glideTo(target);
+                // Walk to the spot (or the nearest place one can stand), round anything in the way.
+                const spot = nav.nearestWalkable(hit.point.x, hit.point.z, 1.5);
+                if (!spot) return;
+                walkTo(spot, { pitch: Math.max(-0.2, Math.min(0.2, controls.pitch)) }).then(() => onPlayerMoved(true));
             }
         },
         onHover: (x, y) => queueHover(x, y),
@@ -196,8 +244,10 @@ async function main() {
             tip.hidden = true;
             canvas.style.cursor = '';
         }
-        const showRing = !!hit?.floor;
-        if (showRing) floorRing.position.set(hit.point.x, 0.012, hit.point.z);
+        // The ring marks where a click would really take you.
+        const spot = hit?.floor ? nav.nearestWalkable(hit.point.x, hit.point.z, 1.5) : null;
+        const showRing = !!spot;
+        if (showRing) floorRing.position.set(spot.x, 0.012, spot.z);
         if (showRing || floorRing.visible) requestRender();
         floorRing.visible = showRing;
     }
@@ -223,6 +273,24 @@ async function main() {
             goToExhibit(exhibit, { open: false });
         },
         onAction: (action) => {
+            const demo = /^demo:(\w+):(\w+)(?::(\d+))?$/.exec(action);
+            if (demo) {
+                const inst = museum.research.byKey.get(demo[1]);
+                if (!inst) return;
+                audio?.unlock();
+                if (demo[2] === 'stage') inst.goStage(Number(demo[3]));
+                else inst[demo[2]]?.();
+                requestRender();
+                return;
+            }
+            if (action.startsWith('go:')) {
+                const target = museum.byId.get(action.slice(3));
+                if (target) {
+                    if (window.matchMedia('(max-width: 760px)').matches) panels.close();
+                    goToExhibit(target, { open: false });
+                }
+                return;
+            }
             if (action === 'collab-network' || action === 'collab-map') {
                 const mode = action === 'collab-map' ? 'map' : 'network';
                 museum.setCollabView(mode);
@@ -260,15 +328,29 @@ async function main() {
             return;
         }
         if (open) panels.open(exhibit);
-        const view = exhibit.view;
+        const view = framedView(exhibit);
         if (!view) return;
-        const near = Math.hypot(view.x - controls.x, view.z - controls.z) < 30;
-        if (near && pathClear(world.colliders, controls, view)) {
-            await controls.glideTo(view);
-        } else {
-            await teleport(view);
-        }
+        const dist = Math.hypot(view.x - controls.x, view.z - controls.z);
+        if (dist < 0.3) await controls.glideTo(view);
+        else await walkTo(view, { yaw: view.yaw, pitch: view.pitch, maxWalk: 34 });
         onPlayerMoved(true);
+    }
+
+    /**
+     * On a narrow portrait screen the view is much narrower than it is tall:
+     * stand further back so a whole work fits across, where there is room.
+     */
+    function framedView(exhibit) {
+        const v = exhibit.view;
+        const f = exhibit.focus;
+        if (!v || !f || camera.aspect >= 0.8) return v;
+        const k = Math.min(1.7, 0.8 / Math.max(camera.aspect, 0.4));
+        for (let s = k; s > 1.02; s -= 0.1) {
+            const x = f.x + (v.x - f.x) * s;
+            const z = f.z + (v.z - f.z) * s;
+            if (nav.walkable(x, z)) return { ...v, x, z, pitch: Math.atan2(f.y - 1.65, Math.hypot(x - f.x, z - f.z)) };
+        }
+        return v;
     }
 
     function goToRoom(id) {
@@ -350,14 +432,39 @@ async function main() {
     document.querySelectorAll('[data-quality-set]').forEach((btn) => btn.addEventListener('click', () => {
         if (btn.dataset.qualitySet !== state.quality) setQuality(btn.dataset.qualitySet, true);
     }));
+    // Day and night: the light changes over a second and a half, not at once.
+    const mood = { value: document.documentElement.dataset.theme === 'dark' ? 1 : 0, target: null };
     document.querySelectorAll('[data-theme-set]').forEach((btn) => btn.addEventListener('click', () => {
         const next = btn.dataset.themeSet;
         if (next === document.documentElement.dataset.theme) return;
         setTheme(next, true);
-        applyWorldTheme(world, scene, next);
+        mood.target = next === 'dark' ? 1 : 0;
+        if (CALM) {
+            mood.value = mood.target;
+            applyWorldTheme(world, scene, mood.value);
+        }
         minimap.draw(true);
         requestRender();
     }));
+    $('btn-reset').addEventListener('click', () => resetView());
+    $('btn-sound').addEventListener('click', () => {
+        audio.toggle();
+        updateSoundButton();
+    });
+    function updateSoundButton() {
+        const on = audio.enabled;
+        const btn = $('btn-sound');
+        btn.setAttribute('aria-pressed', String(on));
+        btn.setAttribute('aria-label', on ? 'Mute sound' : 'Turn sound on');
+        btn.dataset.tip = on ? 'Mute (U)' : 'Sound on (U)';
+        btn.querySelector('i').className = on ? 'fas fa-volume-high' : 'fas fa-volume-xmark';
+    }
+    /** Level the view; if somehow outside the building, go back to the lobby. */
+    function resetView() {
+        if (!roomAt(controls.x, controls.z)) { goToRoom('home'); return; }
+        controls.resetView();
+        requestRender();
+    }
     $('lightbox').addEventListener('click', (ev) => {
         if (ev.target.closest('button') || ev.target === $('lightbox')) closeLightbox();
     });
@@ -372,6 +479,13 @@ async function main() {
             else if (document.body.classList.contains('catalogue-open')) closeCatalogue();
             else toggleHelp(false);
         } else if (!ev.ctrlKey && !ev.metaKey && !ev.altKey && state.entered) {
+            // Enter opens the work you are standing in front of.
+            if (ev.key === 'Enter' && approach.current && (ev.target === canvas || ev.target === document.body)) {
+                ev.preventDefault();
+                goToExhibit(approach.current, { open: true });
+            }
+            if (ev.code === 'KeyR') resetView();
+            if (ev.code === 'KeyU') { audio.toggle(); updateSoundButton(); }
             if (ev.code === 'KeyM') minimap.toggle();
             if (ev.code === 'KeyC') openCatalogue();
             if (ev.code === 'KeyH' || ev.key === '?') toggleHelp();
@@ -406,8 +520,17 @@ async function main() {
             pipeline.dispose();
             pipeline = null;
         }
+        // Without the finishing pass, the renderer rolls off highlights itself.
+        renderer.toneMapping = cfg.bloom ? THREE.NoToneMapping : THREE.NeutralToneMapping;
         renderer.shadowMap.enabled = cfg.shadows;
         world.lights.key.castShadow = cfg.shadows;
+        const key = world.lights.key;
+        if (key.shadow.mapSize.x !== cfg.shadowMap) {
+            key.shadow.mapSize.set(cfg.shadowMap, cfg.shadowMap);
+            key.shadow.map?.dispose();
+            key.shadow.map = null;
+        }
+        visitors?.setCount(cfg.visitors);
         scene.traverse((o) => {
             if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; });
         });
@@ -424,7 +547,9 @@ async function main() {
         const h = window.innerHeight;
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
-        camera.fov = w / h < 0.8 ? 78 : 70;
+        // A natural architectural view: about 60° vertically on a wide
+        // screen (no wide-angle stretch at the edges), more on a phone held upright.
+        camera.fov = w / h < 0.8 ? 74 : w / h < 1.3 ? 66 : 60;
         camera.updateProjectionMatrix();
         pipeline?.setSize(w, h);
         const buffer = renderer.getDrawingBufferSize(new THREE.Vector2());
@@ -434,29 +559,91 @@ async function main() {
         requestRender();
     }
     window.addEventListener('resize', resize);
+    let visitors = null;
     setQuality(state.quality, false);
 
     // First pose: the room named in the address, else the lobby.
     const startRoom = ROOM_BY_ID[roomFromHash()] || ROOM_BY_ID.home;
     controls.setPose(startRoom.spawn);
-    applyWorldTheme(world, scene, document.documentElement.dataset.theme);
+    applyWorldTheme(world, scene, mood.value);
     onPlayerMoved(true);
 
-    // Visitors arrive once the doors are open (they load in the background).
-    let visitors = null;
+    // Sound (muted until the visitor turns it on).
+    audio = new MuseumAudio();
+    controls.onStep = (pace) => audio.footstep(pace, state.room);
+    updateSoundButton();
 
-    // Render loop: draws only when something changed or something nearby moves.
+    // The research demonstrations report stage changes to an open panel.
+    museum.research.onChange = (inst) => panels.refreshDemo(inst);
+
+    // Approaching a work: a quiet prompt, and its picture light brightens.
+    const approach = { current: null, lastCheck: 0, wash: null };
+    const approachEl = $('approach');
+    function updateApproach(now) {
+        if (now - approach.lastCheck < 160) return;
+        approach.lastCheck = now;
+        let best = null;
+        let bestScore = 0;
+        if (!controls.glide) {
+            const fx = -Math.sin(controls.yaw);
+            const fz = -Math.cos(controls.yaw);
+            for (const x of museum.exhibits) {
+                if (!x.view || !x.focus || x.kind === 'tv' || x.kind === 'link') continue;
+                const dx = x.focus.x - controls.x;
+                const dz = x.focus.z - controls.z;
+                const d = Math.hypot(dx, dz);
+                const reach = Math.hypot(x.view.x - x.focus.x, x.view.z - x.focus.z) + 1.2;
+                if (d > reach || d < 0.3) continue;
+                const facing = (dx * fx + dz * fz) / d;
+                if (facing < 0.82) continue;
+                const score = facing * (1 - d / (reach + 1));
+                if (score > bestScore) { bestScore = score; best = x; }
+            }
+        }
+        if (best === approach.current) return;
+        approach.current = best;
+        if (best) {
+            approachEl.querySelector('strong').textContent = best.title;
+            approachEl.querySelector('em').textContent = best.kind === 'demo' ? 'Research demonstration' : (best.subtitle || '');
+        }
+        approachEl.classList.toggle('is-on', !!best);
+        approachEl.setAttribute('aria-hidden', String(!best));
+        approachEl.tabIndex = best ? 0 : -1;
+        if (approach.wash) approach.wash.userData.boost = 0;
+        approach.wash = best?.wash || null;
+        if (approach.wash) approach.wash.userData.boost = 1;
+    }
+    approachEl.addEventListener('click', () => { if (approach.current) goToExhibit(approach.current, { open: true }); });
+
+    // Render loop: draws only when something changed or something nearby
+    // moves, and does nothing at all while the tab is hidden.
     let last = performance.now();
     function frame(now) {
+        requestAnimationFrame(frame);
+        if (document.hidden) { last = now; return; }
         const dt = Math.min(0.1, (now - last) / 1000);
         last = now;
+        const t = now / 1000;
         if (controls.update(dt)) {
             onPlayerMoved(false);
             state.needsRender = true;
         }
-        if (museum.animate(now / 1000, dt, controls.x, controls.z)) state.needsRender = true;
-        if (visitors?.update(now / 1000, dt, controls.x, controls.z)) state.needsRender = true;
-        if (highlight.update(now / 1000, dt)) state.needsRender = true;
+        camera.updateMatrixWorld();
+        viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(viewProj);
+        if (museum.animate(t, dt, controls.x, controls.z)) state.needsRender = true;
+        if (visitors?.update(t, dt, controls.x, controls.z, frustum)) state.needsRender = true;
+        if (residents.update(t, dt, controls.x, controls.z, frustum)) state.needsRender = true;
+        if (highlight.update(t, dt)) state.needsRender = true;
+        if (mood.target !== null) {
+            mood.value += Math.sign(mood.target - mood.value) * Math.min(Math.abs(mood.target - mood.value), dt / 1.5);
+            applyWorldTheme(world, scene, mood.value);
+            if (mood.value === mood.target) mood.target = null;
+            state.needsRender = true;
+        }
+        if (stepWashes(dt)) state.needsRender = true;
+        updateApproach(now);
+        audio.update(dt, { x: controls.x, z: controls.z, yaw: controls.yaw, room: state.room, research: museum.research });
         if (state.needsRender) {
             state.needsRender = false;
             if (reflection.enabled) {
@@ -468,18 +655,35 @@ async function main() {
             else renderer.render(scene, camera);
             renderer.shadowMap.autoUpdate = true;
         }
-        requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) audio.suspend(); else { audio.resume(); requestRender(); }
+    });
 
-    // Wait for the textures around the starting point, then walk straight in.
+    /** Ease each picture light's brightness towards its target (brighter for the work you face). */
+    function stepWashes(dt) {
+        let moving = false;
+        for (const mat of world.themed.washes) {
+            const want = mat.userData.boost || 0;
+            const cur = mat.userData.lift || 0;
+            if (Math.abs(want - cur) < 0.002) continue;
+            mat.userData.lift = cur + (want - cur) * (1 - Math.exp(-dt * 5));
+            mat.opacity = (mat.userData.level ?? mat.opacity) * (1 + 0.45 * mat.userData.lift);
+            moving = true;
+        }
+        return moving;
+    }
+
+    // Wait for the textures around the starting point (not every texture in
+    // the building), then walk straight in.
     await new Promise((resolve) => {
         const started = performance.now();
         const tick = () => {
             const p = museum.nearbyProgress(controls.x, controls.z);
             setProgress(0.6 + p * 0.4, 'Hanging the artworks…');
-            if (p >= 0.98 || performance.now() - started > 9000) resolve();
-            else setTimeout(tick, 120);
+            if (p >= 0.9 || performance.now() - started > 5000) resolve();
+            else setTimeout(tick, 100);
         };
         tick();
     });
@@ -489,8 +693,10 @@ async function main() {
     if (arrival) controls.setPose({ ...startRoom.spawn, x: startRoom.spawn.x + 3.4 * Math.sin(startRoom.spawn.yaw), pitch: 0.16 });
     enter();
     if (arrival) controls.glideTo({ ...startRoom.spawn, pitch: 0 }, 3.6);
-    const people = new Visitors({ scene, museum, world, count: QUALITY[state.quality].visitors });
-    people.load().then(() => { visitors = people; }).catch((error) => console.warn('Visitors could not load', error));
+    // Visitors load after the first frames are on screen, and join one by one.
+    const people = new Visitors({ scene, museum, world, nav, count: QUALITY[state.quality].visitors });
+    visitors = people;
+    setTimeout(() => people.load().catch((error) => console.warn('Visitors could not load', error)), 800);
 
     function enter() {
         if (state.entered) return;
@@ -509,28 +715,48 @@ async function main() {
     }
 
     // Debug/automation handle.
-    window.__museum = { controls, museum, world, goToRoom, goToExhibit, panels, scene, camera, renderer, requestRender, setQuality, get visitors() { return visitors; } };
+    window.__museum = { controls, museum, world, nav, residents, get audio() { return audio; }, goToRoom, goToExhibit, walkTo, panels, scene, camera, renderer, requestRender, setQuality, get visitors() { return visitors; } };
 }
 
 // ---------------------------------------------------------------------------
 // Pieces of the HUD
 // ---------------------------------------------------------------------------
 
-/** Whether a straight walk from a to b stays clear of walls and furniture. */
-function pathClear(colliders, a, b) {
-    const dist = Math.hypot(b.x - a.x, b.z - a.z);
-    const steps = Math.ceil(dist / 0.25);
-    for (let i = 1; i < steps; i++) {
-        const x = a.x + ((b.x - a.x) * i) / steps;
-        const z = a.z + ((b.z - a.z) * i) / steps;
-        if (!roomAt(x, z)) return false;
-        for (const c of colliders) {
-            if (c.person) continue;   // people step aside
-            if (c.r !== undefined ? Math.hypot(x - c.x, z - c.z) < c.r + 0.1
-                : x > c.x1 - 0.1 && x < c.x2 + 0.1 && z > c.z1 - 0.1 && z < c.z2 + 0.1) return false;
+/**
+ * Some viewpoints, computed straight out from a work, land inside a bench, a
+ * plinth or a column; walking there would end in a jolt out of it. Move each
+ * such view along its line of sight (or to the nearest standing spot) and
+ * turn it back towards the work.
+ */
+function settleViews(museum, nav) {
+    for (const x of museum.exhibits) {
+        const v = x.view;
+        if (!v || nav.walkable(v.x, v.z)) continue;
+        const f = x.focus;
+        let spot = null;
+        if (f) {
+            const dx = v.x - f.x;
+            const dz = v.z - f.z;
+            const d = Math.hypot(dx, dz) || 1;
+            for (let k = 0.25; k <= 3 && !spot; k += 0.25) {
+                for (const s of [1, -1]) {
+                    const t = d + s * k;
+                    if (t < 1) continue;
+                    const px = f.x + (dx / d) * t;
+                    const pz = f.z + (dz / d) * t;
+                    if (nav.walkable(px, pz)) { spot = { x: px, z: pz }; break; }
+                }
+            }
+        }
+        spot = spot || nav.nearestWalkable(v.x, v.z, 3);
+        if (!spot) continue;
+        v.x = spot.x;
+        v.z = spot.z;
+        if (f) {
+            v.yaw = Math.atan2(v.x - f.x, v.z - f.z);
+            v.pitch = Math.max(-0.55, Math.min(0.55, Math.atan2(f.y - 1.65, Math.hypot(f.x - v.x, f.z - v.z))));
         }
     }
-    return true;
 }
 
 /**
@@ -709,7 +935,7 @@ function buildCatalogue(museum, onPick) {
         <section class="cat-room" data-cat-room="${g.room.id}" style="--room-accent:${escapeHtml(g.room.accent || '#8a8f98')}">
             <h2><span>${g.room.numeral ? `Gallery ${g.room.numeral}` : g.room.id === 'hall' ? 'Grand Hall' : g.room.title}</span>${escapeHtml(g.room.title)} <small>${escapeHtml(g.room.tagline || '')}</small></h2>
             <ul>${g.items.map((x) => `
-                <li data-search="${escapeHtml(`${x.title} ${x.subtitle || ''}`.toLowerCase())}">
+                <li data-search="${escapeHtml(searchText(x))}">
                     <button type="button" data-exhibit="${escapeHtml(x.id)}">
                         <i class="${escapeHtml(x.icon || 'fas fa-circle')}" aria-hidden="true"></i>
                         <span><strong>${escapeHtml(x.title)}</strong>${x.subtitle ? `<small>${escapeHtml(x.subtitle)}</small>` : ''}</span>
@@ -722,18 +948,72 @@ function buildCatalogue(museum, onPick) {
     });
     const search = $('catalogue-search');
     const empty = $('catalogue-empty');
+    const total = groups.reduce((n, g) => n + g.items.length, 0);
+    const status = $('catalogue-count');
     search.addEventListener('input', () => {
-        const q = search.value.trim().toLowerCase();
-        list.querySelectorAll('li[data-search]').forEach((li) => { li.hidden = !!q && !q.split(/\s+/).every((w) => li.dataset.search.includes(w)); });
+        const q = normalise(search.value.trim());
+        const words = q.split(/\s+/).filter(Boolean);
+        let shown = 0;
+        list.querySelectorAll('li[data-search]').forEach((li) => {
+            const hit = !words.length || words.every((w) => li.dataset.search.includes(w));
+            li.hidden = !hit;
+            if (hit) shown += 1;
+        });
         list.querySelectorAll('.cat-room').forEach((sec) => { sec.hidden = !sec.querySelector('li:not([hidden])'); });
         empty.hidden = !!list.querySelector('.cat-room:not([hidden])');
+        status.textContent = words.length ? `${shown} of ${total} works match` : `${total} works on display`;
+    });
+    // Enter goes to the first match.
+    search.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter') return;
+        const first = list.querySelector('li:not([hidden]) [data-exhibit]');
+        if (first) { ev.preventDefault(); first.click(); }
+    });
+    // Keep keyboard focus inside the open catalogue.
+    $('catalogue').addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Tab') return;
+        const items = [...$('catalogue').querySelectorAll('input, button, a[href]')].filter((el) => !el.closest('[hidden]') && el.offsetParent !== null);
+        if (!items.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
     });
     $('catalogue-close').addEventListener('click', closeCatalogue);
     $('catalogue').addEventListener('click', (ev) => { if (ev.target === $('catalogue')) closeCatalogue(); });
-    $('catalogue-count').textContent = `${groups.reduce((n, g) => n + g.items.length, 0)} works on display`;
+    status.textContent = `${total} works on display`;
 }
 
+/** Lower case, without accents, so "Ahn" finds "Ahn" and "facade" finds "façade". */
+function normalise(text) {
+    return String(text || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+const KIND_WORDS = {
+    publication: 'publication paper article', project: 'project research', tool: 'tool software app', skill: 'skill',
+    education: 'education degree', experience: 'experience position role', award: 'award honour', certificate: 'certificate certification',
+    news: 'news', seminar: 'seminar talk presentation', demo: 'demonstration simulation animation', coauthor: 'co-author collaborator', interest: 'research interest'
+};
+
+/** Everything a visitor might search for: title, venue, authors, year, topics, technologies. */
+function searchText(x) {
+    const p = x.payload && typeof x.payload === 'object' ? x.payload : {};
+    const parts = [x.title, x.subtitle, KIND_WORDS[x.kind] || ''];
+    if (x.kind === 'publication') parts.push((p.authors || []).join(' '), p.journal, p.conference, p.year, (p.topics || []).join(' '), p.doi);
+    if (x.kind === 'project') parts.push((p.technologies || []).join(' '), p.funding_source, p.role, p.description);
+    if (x.kind === 'tool') parts.push((p.badges || []).map((b) => b.label).join(' '), p.description);
+    if (x.kind === 'skill') parts.push(p.category?.title, p.skill?.level);
+    if (x.kind === 'demo') parts.push(p.def?.short, p.def?.description);
+    if (x.kind === 'coauthor') parts.push(p.university, p.Industry, p.country);
+    if (x.kind === 'experience') parts.push(p.organization, p.location, p.duration);
+    if (x.kind === 'education') parts.push(p.institution, p.duration, p.thesis);
+    return normalise(parts.filter(Boolean).join(' ').replace(/<[^>]+>/g, ' '));
+}
+
+let catalogueOpener = null;
 function openCatalogue() {
+    const active = document.activeElement;
+    catalogueOpener = active && active !== document.body ? active : null;
     document.body.classList.add('catalogue-open');
     $('catalogue').setAttribute('aria-hidden', 'false');
     setTimeout(() => $('catalogue-search').focus({ preventScroll: true }), 50);
@@ -742,7 +1022,10 @@ function openCatalogue() {
 function closeCatalogue() {
     document.body.classList.remove('catalogue-open');
     $('catalogue').setAttribute('aria-hidden', 'true');
-    $('scene').focus({ preventScroll: true });
+    // Back to whatever opened it (the Catalogue button), else the museum view.
+    const back = catalogueOpener?.isConnected ? catalogueOpener : $('scene');
+    catalogueOpener = null;
+    back.focus({ preventScroll: true });
 }
 
 function closeMenu() {
@@ -831,6 +1114,25 @@ function showFatal(message) {
     const box = $('fatal');
     box.hidden = false;
     box.querySelector('.fatal-message').textContent = message;
+}
+
+/** Without WebGL: the whole collection as plain, linked HTML. */
+function renderTextPortfolio(data) {
+    const e = escapeHtml;
+    const link = (href, text) => (href ? `<a href="${e(href)}" target="_blank" rel="noopener">${e(text)}</a>` : e(text));
+    const section = (title, items) => (items.length ? `<section class="text-section"><h3>${e(title)}</h3><ul>${items.join('')}</ul></section>` : '');
+    const p = data.profile || {};
+    const html = `
+        <div class="text-portfolio">
+            ${(p.about || []).map((t) => `<p>${e(t)}</p>`).join('')}
+            ${section('Education', (p.education || []).map((x) => `<li><strong>${e(x.degree)}</strong>, ${e(x.institution)} (${e(x.duration)})</li>`))}
+            ${section('Experience', data.experienceList.map((x) => `<li><strong>${e(x.position)}</strong>, ${e(x.organization)} (${e(x.duration)})</li>`))}
+            ${section('Publications', data.pubList.map((x) => `<li>${link(x.doi || x.link, x.title)}. ${e((x.authors || []).join(', '))}. <em>${e(x.journal || x.conference || '')}</em>, ${e(x.year)}.</li>`))}
+            ${section('Research projects', data.projectList.map((x) => `<li><strong>${e(x.title)}</strong> (${e(x.duration)}, ${e(x.status)})</li>`))}
+            ${section('Tools and software', data.tools.map((x) => `<li>${link((x.actions || []).find((a) => /github|doi/.test(a.href || ''))?.href, x.title)}: ${e(String(x.description || '').replace(/<[^>]+>/g, ''))}</li>`))}
+            ${section('Awards', data.awards.map((x) => `<li><strong>${e(x.title)}</strong>, ${e(x.issuer)} (${e(x.date)})</li>`))}
+        </div>`;
+    document.querySelector('#fatal .fatal-card')?.insertAdjacentHTML('beforeend', html);
 }
 
 function webglAvailable() {

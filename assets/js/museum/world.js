@@ -590,7 +590,9 @@ export function buildWorld(scene, renderer, surfaces = {}) {
     const leather = new THREE.MeshStandardMaterial({ color: '#3a2f29', roughness: 0.62 });
     leather.userData.cast = true;
     /** A bench: a slab of oak on two steel frames, with a leather pad. */
+    const benches = [];
     const bench = (x, z, len = 3.2) => {
+        benches.push({ x, z, len, seat: 0.535 });
         const slab = new THREE.Mesh(new RoundedBoxGeometry(len, 0.09, 0.82, 3, 0.03), benchTop);
         slab.position.set(x, 0.43, z);
         worldUVs(slab);
@@ -608,10 +610,50 @@ export function buildWorld(scene, renderer, surfaces = {}) {
         colliders.push({ x1: x - len / 2, z1: z - 0.45, x2: x + len / 2, z2: z + 0.45 });
     };
     for (const x of [-2, 16, 34]) bench(x, 0);
-    // One in the middle of the galleries that have nothing standing there.
-    for (const id of ['education', 'experience', 'projects', 'tools', 'skills']) {
+    // One in the middle of the galleries that have nothing standing there
+    // (Projects and Tools hold the research demonstrations instead).
+    for (const id of ['education', 'experience', 'skills']) {
         const p = galleryPoint(ROOM_BY_ID[id], 0, 9);
         bench(p.x, p.z, 3);
+    }
+
+    // Public rooms: a honed stone dado with a slim bronze cap along every
+    // solid wall, low enough to sit below the hung works.
+    const marble = surfaces.marble || {};
+    const dadoMat = new THREE.MeshStandardMaterial({
+        color: marble.color ? '#cfc4b2' : '#b9ad99', map: marble.color || null, normalMap: marble.normal || null,
+        normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.55, metalness: 0
+    });
+    const capMat = new THREE.MeshStandardMaterial({ color: '#7d6242', roughness: 0.35, metalness: 0.85 });
+    const DADO = 0.6;
+    for (const room of ROOMS.filter((r) => r.floor === 'stone')) {
+        const [x1, z1, x2, z2] = room.rect;
+        for (const piece of room.solid) {
+            const len = piece.b - piece.a;
+            if (len < 0.3) continue;
+            const mid = (piece.a + piece.b) / 2;
+            const face = { N: z1 + SKIN, S: z2 - SKIN, W: x1 + SKIN, E: x2 - SKIN }[piece.side];
+            const out = piece.side === 'N' || piece.side === 'W' ? 1 : -1;
+            const c = face + out * 0.006;
+            const c2 = face + out * 0.02;
+            if (piece.side === 'N' || piece.side === 'S') {
+                worldUVs(box(len, DADO, 0.05, dadoMat, mid, DADO / 2, c));
+                box(len, 0.022, 0.06, capMat, mid, DADO + 0.011, c2);
+            } else {
+                worldUVs(box(0.05, DADO, len, dadoMat, c, DADO / 2, mid));
+                box(0.06, 0.022, len, capMat, c2, DADO + 0.011, mid);
+            }
+        }
+    }
+    // Lobby floor: bronze inlay rings mark the circle of the oculus above.
+    const inlay = new THREE.MeshStandardMaterial({ color: '#8a6a43', roughness: 0.3, metalness: 0.9 });
+    for (const [r, w] of [[OCULUS.r + 0.35, 0.05], [OCULUS.r + 0.5, 0.02]]) {
+        const ring = new THREE.Mesh(new THREE.RingGeometry(r - w / 2, r + w / 2, 128), inlay);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(OCULUS.x, 0.004, OCULUS.z);
+        ring.userData.noPick = true;
+        ring.receiveShadow = true;
+        scene.add(ring);
     }
 
     // A shaft of daylight from the lobby's oculus.
@@ -648,7 +690,7 @@ export function buildWorld(scene, renderer, surfaces = {}) {
 
     mergeStatic(group);
     const world = {
-        group, colliders, floors, themed, surfaces,
+        group, colliders, floors, themed, surfaces, benches,
         lights: { hemi, key, fill },
         materials: { trimMat, bronzeMat, columnMat, corniceMat, railMat },
         followShadow(x, z) {
@@ -788,39 +830,47 @@ export function canvasTexture(canvas, anisotropy = 8) {
     return tex;
 }
 
-/** Day and night lighting moods. */
-export function applyWorldTheme(world, scene, theme) {
-    const night = theme === 'dark';
+const DAY_BG = new THREE.Color('#ece6db');
+const NIGHT_BG = new THREE.Color('#050608');
+
+/**
+ * Day and night lighting moods. `mood` is 'light' / 'dark', or a number from
+ * 0 (day) to 1 (night) so the change can be eased over a second or two:
+ * the skylight fades, the architectural lights take over, and the sky in the
+ * oculus dims before it changes to stars.
+ */
+export function applyWorldTheme(world, scene, mood) {
+    const n = typeof mood === 'number' ? mood : mood === 'dark' ? 1 : 0;
+    const mixf = (a, b) => a + (b - a) * n;
     const { hemi, key, fill } = world.lights;
-    hemi.intensity = night ? 0.16 : 1.1;
-    key.intensity = night ? 0.12 : 1.3;
-    fill.intensity = night ? 0.04 : 0.22;
-    scene.environmentIntensity = night ? 0.12 : 0.5;
-    const bg = night ? '#050608' : '#ece6db';
-    scene.background = new THREE.Color(bg);
-    scene.fog = new THREE.Fog(bg, night ? 30 : 60, night ? 90 : 140);
-    for (const mat of world.themed.paints) {
-        mat.color.copy(mat.userData.base).multiplyScalar(night ? 0.6 : 1);
-    }
-    for (const mat of world.themed.floors) {
-        mat.color.copy(mat.userData.base).multiplyScalar(night ? 0.55 : 1);
-    }
-    for (const mat of world.themed.emissive) {
-        mat.color.copy(night ? mat.userData.night : mat.userData.day);
-    }
+    hemi.intensity = mixf(1.1, 0.16);
+    key.intensity = mixf(1.3, 0.12);
+    fill.intensity = mixf(0.22, 0.04);
+    scene.environmentIntensity = mixf(0.5, 0.12);
+    if (!scene.background?.isColor) scene.background = new THREE.Color();
+    scene.background.copy(DAY_BG).lerp(NIGHT_BG, n);
+    if (!scene.fog) scene.fog = new THREE.Fog(0, 60, 140);
+    scene.fog.color.copy(scene.background);
+    scene.fog.near = mixf(60, 30);
+    scene.fog.far = mixf(140, 90);
+    for (const mat of world.themed.paints) mat.color.copy(mat.userData.base).multiplyScalar(mixf(1, 0.6));
+    for (const mat of world.themed.floors) mat.color.copy(mat.userData.base).multiplyScalar(mixf(1, 0.55));
+    for (const mat of world.themed.emissive) mat.color.copy(mat.userData.day).lerp(mat.userData.night, n);
     for (const mat of world.themed.washes) {
-        mat.opacity = night ? 0.95 : 0.42;
+        mat.userData.level = mixf(0.42, 0.95);
+        mat.opacity = mat.userData.level * (1 + 0.45 * (mat.userData.lift || 0));
     }
-    for (const mat of world.themed.glows) {
-        mat.opacity = night ? mat.userData.night : mat.userData.day;
-    }
-    for (const mat of world.themed.bounce || []) {
-        mat.emissive.copy(night ? mat.userData.night : mat.userData.day);
-    }
+    for (const mat of world.themed.glows) mat.opacity = mixf(mat.userData.day, mat.userData.night);
+    for (const mat of world.themed.bounce || []) mat.emissive.copy(mat.userData.day).lerp(mat.userData.night, n);
+    for (const sun of world.themed.sun || []) sun.opacity = sun.userData.day * Math.pow(1 - n, 1.5);
     const sky = world.themed.sky;
     if (sky) {
-        sky.mat.map = night ? sky.night : sky.day;
-        sky.mat.color.setScalar(night ? 1 : 1.3);
-        sky.mat.needsUpdate = true;
+        const map = n < 0.5 ? sky.day : sky.night;
+        if (sky.mat.map !== map) {
+            sky.mat.map = map;
+            sky.mat.needsUpdate = true;
+        }
+        // Dim towards the switch so the change of sky is not seen.
+        sky.mat.color.setScalar(mixf(1.3, 1) * (0.25 + 0.75 * Math.abs(2 * n - 1)));
     }
 }

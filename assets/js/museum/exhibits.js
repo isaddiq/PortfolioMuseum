@@ -8,6 +8,7 @@ import * as art from './art.js';
 import { ROOMS, ROOM_BY_ID, gallerySurfaces, galleryPoint, roomAt, SKIN, EYE } from './world.js';
 import { textureInfo, pubVenue } from './data.js';
 import { clamp, stripTags, formatDate, easeInOut, seededRandom } from './util.js';
+import { Research } from './research.js';
 
 const LOAD_RADIUS = 28;
 const UNLOAD_RADIUS = 40;
@@ -119,6 +120,9 @@ export class Museum {
         this.buildAwards();
         this.buildActivities();
         this.buildContact();
+        // Research demonstrations: Gallery IV, Gallery VI and the lobby.
+        this.research = new Research(this);
+        this.research.build();
         this.buildLamps();
         // Lit meshes cast and receive shadows; unlit art and glows never do.
         const lit = (m) => [].concat(m.material).some((x) => x && !x.isMeshBasicMaterial && !x.isShaderMaterial);
@@ -418,7 +422,7 @@ export class Museum {
         const pal = this.wallPalette(pose.x, pose.z, accent);
         const mesh = this.addDecal(group, w, h, y, () => paint(pal), { persistent, glow: pal.dark ? 0.38 : 0 });
         const top = y + h / 2;
-        if (wash) this.addWash(group, w, h, top);
+        const washMat = wash ? this.addWash(group, w, h, top) : null;
         if (lamp ?? wash) {
             group.updateMatrixWorld(true);
             this.lamps.push({
@@ -430,7 +434,7 @@ export class Museum {
         if (exhibit) {
             const world = new THREE.Vector3();
             mesh.getWorldPosition(world);
-            this.register(exhibit, [mesh], { x: world.x, y, z: world.z }, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(w, h), viewDistance);
+            this.register(exhibit, [mesh], { x: world.x, y, z: world.z }, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(w, h), viewDistance).wash = washMat;
         }
         return group;
     }
@@ -499,7 +503,7 @@ export class Museum {
             spanW = Math.max(spanW, lw);
         }
 
-        if (wash) this.addWash(group, spanW, top - bottom, top);
+        const washMat = wash ? this.addWash(group, spanW, top - bottom, top) : null;
         if (lamp) {
             group.updateMatrixWorld(true);
             const hood = group.localToWorld(new THREE.Vector3(0, top + 0.2, 0.27));
@@ -509,7 +513,7 @@ export class Museum {
 
         if (exhibit) {
             const focus = { x: world.x, y, z: world.z };
-            this.register(exhibit, meshes, focus, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(spanW, top - bottom), viewDistance);
+            this.register(exhibit, meshes, focus, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(spanW, top - bottom), viewDistance).wash = washMat;
         }
         return group;
     }
@@ -528,6 +532,7 @@ export class Museum {
         wash.renderOrder = -1;
         wash.userData.noPick = true;
         group.add(wash);
+        return mat;
     }
 
     /** Brass picture lights for every lit work: three instanced draw calls. */
@@ -1094,7 +1099,7 @@ export class Museum {
         // South wall, centre: most-cited works from Google Scholar.
         if (scholar?.papers?.length) {
             this.paintWall({ x: 16, z: 8 - f, nx: 0, nz: -1, length: 14 }, 0, {
-                w: 6.2, h: 3.99, y: 2.5, persistent: true, wash: true,
+                w: 6.2, h: 3.99, y: 2.66, persistent: true, wash: true,
                 paint: (pal) => art.paintCitations(scholar, pal),
                 exhibit: { id: 'citations', room: 'hall', kind: 'scholar', title: 'Most cited works', subtitle: 'Google Scholar citations per paper', payload: scholar, icon: 'fas fa-chart-bar' }
             });
@@ -1233,7 +1238,7 @@ export class Museum {
         const room = ROOM_BY_ID.projects;
         const list = this.data.projectList;
         const s = gallerySurfaces(room);
-        this.roomIntro(room, `${list.length} research and design projects, from national R&D programmes to studio work.`);
+        this.roomIntro(room, `${list.length} research and design projects, from national R&D programmes to studio work. On the plinths, five live demonstrations of the methods: BIM, construction informatics, robotics, DfMA and AI.`);
         const items = list.map((project) => {
             const aspect = this.aspectOf(project.image, 4 / 3);
             const size = this.fitBox(aspect, 3.0, 2.05);
@@ -1371,7 +1376,7 @@ export class Museum {
         const room = ROOM_BY_ID.tools;
         const tools = this.data.tools;
         const s = gallerySurfaces(room);
-        this.roomIntro(room, `${tools.length} tools, web apps and frameworks for AEC, from IFC viewers to robot navigation.`);
+        this.roomIntro(room, `${tools.length} tools, web apps and frameworks for AEC, from IFC viewers to robot navigation. On the plinths, four live demonstrations: interoperability, robot navigation, XR and digital twins.`);
         const items = tools.map((tool) => ({
             width: 3.0,
             place: (surface, offset, scale) => {
@@ -1416,6 +1421,8 @@ export class Museum {
         const ribbonMat = new THREE.MeshStandardMaterial({ color: '#1e3a8a', roughness: 0.75 });
         const cols = 3;
         const swings = [];
+        const vitrineGeo = new THREE.BoxGeometry(0.76, 1.2, 0.76);
+        const vitrineMat = new THREE.MeshStandardMaterial({ color: '#e4edf0', roughness: 0.04, metalness: 0, transparent: true, opacity: 0.1, envMapIntensity: 1.4, depthWrite: false });
         awards.forEach((award, i) => {
             const row = Math.floor(i / cols);
             const col = i % cols;
@@ -1452,6 +1459,16 @@ export class Museum {
             const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), this.frameMats.black);
             stand.position.set(0, 1.25, -0.05);
             group.add(stand);
+            // A glass vitrine with a bronze cap: the medal is seen, not touched.
+            const glass = new THREE.Mesh(vitrineGeo, vitrineMat);
+            glass.position.y = 1.15 + 0.6;
+            glass.userData.noPick = true;
+            glass.userData.noShadow = true;
+            glass.renderOrder = 3;
+            group.add(glass);
+            const lid = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.035, 0.8), this.world.materials.bronzeMat);
+            lid.position.y = 2.37;
+            group.add(lid);
             swings.push(swing);
             const wp = new THREE.Vector3();
             medal.getWorldPosition(wp);
@@ -1473,7 +1490,7 @@ export class Museum {
             this.animators.push({
                 x: c.x, z: c.z, radius: 20,
                 update: (t) => {
-                    swings.forEach((s, i) => { s.rotation.y = Math.sin(t * 0.55 + i * 1.3) * 0.38; });
+                    swings.forEach((s, i) => { s.rotation.y = Math.sin(t * 0.32 + i * 1.3) * 0.13 + Math.sin(t * 0.13 + i) * 0.04; });
                     return true;
                 }
             });
@@ -1632,6 +1649,7 @@ export class Museum {
         this.group.add(net);
 
         const meshes = [];
+        const coauthors = [];
         const sphereGeo = new THREE.SphereGeometry(1, 32, 20);
         const selfMat = new THREE.MeshStandardMaterial({ color: '#e8c27a', roughness: 0.22, metalness: 0.85, emissive: '#5a400c', emissiveIntensity: 0.6 });
         const self = new THREE.Mesh(sphereGeo, selfMat);
@@ -1663,7 +1681,6 @@ export class Museum {
             node.scale.setScalar(0.07 + 0.028 * Math.min(author.papers, 12));
             node.position.copy(pos);
             net.add(node);
-            meshes.push(node);
             // Rod to the centre, thicker for more joint papers.
             const len = pos.length();
             const dir = pos.clone().normalize();
@@ -1684,7 +1701,9 @@ export class Museum {
             net.add(sprite);
             const affiliation = author.university || author.Industry || '';
             this.addSlot(smat, () => art.paintCollabLabel(author.name, `${author.papers} paper${author.papers === 1 ? '' : 's'}${affiliation ? ' · ' + affiliation : ''}`, color), centre.clone().add(pos), { placeholder: '#ffffff' });
-            meshes.push(sprite);
+            // Each co-author is a work of its own: click for the papers written together.
+            const record = this.register({ id: `coauthor-${i}`, room: room.id, kind: 'coauthor', title: author.name, subtitle: `${affiliation ? affiliation + ' · ' : ''}${author.papers} joint paper${author.papers === 1 ? '' : 's'}`, payload: author, icon: 'fas fa-user-group', noHighlight: true }, [node, sprite]);
+            coauthors.push(record);
         });
 
         // Faint links between co-authors who also published together.
@@ -1723,8 +1742,10 @@ export class Museum {
         this.addSlot(selfTag, () => art.paintCollabLabel(profile.name, `${collaborations.center?.university || ''}`, '#e8c27a'), centre, { placeholder: '#ffffff' });
         meshes.push(selfSprite);
 
-        this.register({ id: 'collab-network', room: room.id, kind: 'collab', title: 'Co-authorship network', subtitle: `${n} co-authors · sized by joint papers · coloured by country`, payload: null, icon: 'fas fa-circle-nodes', noHighlight: true },
+        const netRecord = this.register({ id: 'collab-network', room: room.id, kind: 'collab', title: 'Co-authorship network', subtitle: `${n} co-authors · sized by joint papers · coloured by country`, payload: null, icon: 'fas fa-circle-nodes', noHighlight: true },
             meshes, { x: centre.x, y: centre.y - 0.4, z: centre.z }, toDoor, 3.9);
+        // Co-authors share the network's viewpoint (the sculpture turns).
+        for (const c of coauthors) c.view = netRecord.view;
 
         const d = new THREE.Object3D();
         return {

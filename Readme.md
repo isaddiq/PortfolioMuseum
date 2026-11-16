@@ -9,19 +9,44 @@ The academic portfolio of Saddiq Ur Rehman, a researcher in Building Information
 
 ## 🏛️ The Museum
 
-- **Lobby (Home)**: an oculus open to the sky (clouds by day, stars by night) with dust drifting in its shaft of light, turned stone columns, a portrait column, About Me wall texts, research interests, Google Scholar metrics, the museum directory, and a wall-mounted **news TV** that cycles through every news item (photo with a slow Ken Burns drift, headline, progress bar and a scrolling ticker), flanked by the four latest highlights
+- **Lobby (Home)**: a research centrepiece on a round dais (one building model, cycling through BIM, robotics, XR and digital twin), an oculus open to the sky (clouds by day, stars by night) with dust drifting in its shaft of light, turned stone columns, a portrait column, About Me wall texts, research interests, Google Scholar metrics, the museum directory, and a wall-mounted **news TV** that cycles through every news item (photo with a slow Ken Burns drift, headline, progress bar and a scrolling ticker), flanked by the four latest highlights
 - **Grand Hall**: gallery banners above every door, the news timeline and the most-cited works
-- **Galleries I–VIII**: Education (diplomas), Experience, Publications (journal papers hang as their **journal's cover**, the rest as a poster generated from the paper's topics, plus a reading desk with search and filters), Projects, Skills (columns that rise to their proficiency as you walk in), Tools (screens), Awards (gently swaying medals and framed certificates) and Activities
+- **Galleries I–VIII**: Education (diplomas), Experience, Publications (journal papers hang as their **journal's cover**, the rest as a poster generated from the paper's topics, plus a reading desk with search and filters), Projects (with five research demonstrations), Skills (columns that rise as you walk in; each skill's panel lists the tools, projects and papers it appears in), Tools (screens, with four research demonstrations), Awards (medals under glass vitrines, swaying gently, and framed certificates) and Activities (click any co-author in the network for the papers written together)
 - **Activities' hologram projector**: the co-authors as a turning **network** with sparks running along its links, or as a **holographic globe** of glowing land with a marker on each partner country, arcs from Korea, and cards beside it listing the co-authors there. The globe turns on its own; drag it to spin and tilt it. Switch with the HUD control (click Network, World map, or the Hologram label to flip), the console beside the dais, the collaboration panel or `V`
 - **Contact**: information desk, location map, profiles and the visitor counter
 
+### Research demonstrations
+
+Ten animated, interactive miniatures show how the research methods work. Each stands on a plinth with a reading label that names its stages and highlights the current one; click it to replay, pause or step through the stages from its panel. They are labelled as **conceptual simulations**: they illustrate methods and never show measured results.
+
+| Where | Demonstration | What happens |
+| --- | --- | --- |
+| Lobby | One model, four ways of working | A tower highlighted floor by floor (BIM), a robot lapping it (robotics), a holographic sweep (XR), lit windows and data pulses (digital twin) |
+| Gallery IV | BIM | A three-storey frame assembles in construction order; click any element for its IFC class, storey, material, size and property-set values |
+| Gallery IV | Construction informatics | Truck, tower crane and building report to a site dashboard; a late delivery opens a gap between planned and actual progress, and re-sequenced lifts close it |
+| Gallery IV | Construction robotics | A six-joint arm lays a brick wall; each move is planned (dotted tool path), then executed with minimum-jerk motion solved by inverse kinematics |
+| Gallery IV | DfMA | Panels form a module on the factory bed; a gantry lifts, carries (with sway) and stacks six modules |
+| Gallery IV | AI for construction | Three typed questions are interpreted into IFC classes and properties, matching elements are retrieved and highlighted, and answered |
+| Gallery VI | BIM interoperability | IFC elements pass through a mapping gate, are tessellated for the engine, gain colliders and a navigation mesh, and are checked element by element |
+| Gallery VI | Robot navigation | A floor plan becomes an occupancy grid; A* (computed live, explored cells shown) plans a route; a person blocks a doorway and the robot replans |
+| Gallery VI | Extended reality | A registration plane turns a physical model into a hologram; a headset orbits and spatial overlays light up where it looks |
+| Gallery VI | Digital twin | A simulated working day: rooms fill, lights and CO₂ change, the twin colours each room by air quality and sends a ventilation boost back |
+
+Research-interest panels in the lobby link to their demonstration.
+
+The models are built like architectural presentation models at about 1:16: each sits on an MDF base board with scale figures, trees and soft contact shadows, and every surface is textured (`surfaces.js`): board-marked concrete, precast panels, brick, curtain walling, office and modular façades, worn yellow plant paint, crane lattice, timber, clay, asphalt with lane markings, soil, grass, floor tiles and plaster. The textures are painted procedurally (nothing to download) and projected triplanar in each part's own space, so they keep their real size on every face, with a fine relief that fades out where it would shimmer.
+
+### Residents
+
+Two **cleaning robots** look after the lobby, Grand Hall and contact room: each leaves its charging dock, plans paths over the walkable grid, spirals over a spot, waits for anyone in its way, and drives home to charge when its battery is low (the dock shows the charge). Two **cats** (a ginger tabby and a tuxedo) wander the building, sit, nap on benches, and now and then hop onto a passing cleaning robot for a ride. The cats are single skinned meshes on a skeleton with fur shading; click a robot or a cat to see what it is doing.
+
 Every work has its caption sign-written on the wall above it, and wall texts, gallery introductions and the big lettering are painted straight onto the plaster: they take the wall's light, shadows and texture, with a little wear in the paint.
 
-**Visitors**: ten realistic people (businesswomen and businessmen, and visitors in everyday clothes) wander the galleries with motion-captured walks, stop a few steps back from works, look around, and raise a camera to take photos, flash and all. They ease up to their pace and down from it, slow and lean into corners, take straight lines across a room instead of zigzags, and their walk cycle always matches the ground they cover, so feet do not slide. They walk around furniture and through the doors, give way to you and to each other, and only those near you are animated.
+**Visitors** (ten on High, four on Fast, joining one by one as they load): realistic people (businesswomen and businessmen, and visitors in everyday clothes) wander the galleries with motion-captured walks, stop a few steps back from works, look around, and now and then raise a camera to take a photo, glancing about as they stand. They ease up to their pace and down from it, slow and lean into corners, take straight lines across a room instead of zigzags, and their walk cycle always matches the ground they cover, so feet do not slide. They walk around furniture and through the doors, give way to you and to each other, never stand inside one another, and only those near you and on screen are animated.
 
 The **catalogue** button lists every work as text (the accessible view), and the arrow button at the top right opens the page-based portfolio at [isaddiq.github.io](https://isaddiq.github.io).
 
-**Controls:** drag with the left or right mouse button to look around, standing still or walking; `W` `A` `S` `D` or the arrow keys to walk (`Shift` to hurry); scroll to step; click the floor to walk there; `1`–`0` jump to a room, `M` map, `C` catalogue, `H` help, `Esc` closes panels. Touch screens get a joystick; a finger drag looks around. `N` and `P` (or the buttons at the foot of an open panel) walk on to the next or previous work in the room. Hovering a work closes a set of brackets around it. The **Lighting** switch (bottom left) sets day or night, and the **Graphics** switch sets **High** (shadows, bloom, mirrored floors, sharper textures) or **Fast** (for phones and small GPUs; the default there). Gallery links such as `#publications` (and the old `#software`) still work.
+**Controls:** drag with the left or right mouse button to look around, standing still or walking; `W` `A` `S` `D` or the arrow keys to walk (`Shift` to hurry); scroll to step; click the floor to walk there (the walk follows a planned path round furniture, plinths and walls, never through them); walk up to a work and press `Enter` (or tap the prompt) to read about it; `R` levels the view; `U` turns the optional sound on or off (footsteps, room tone, a soft motor hum near working demonstrations; off until you turn it on); `1`–`0` jump to a room, `M` map, `C` catalogue, `H` help, `Esc` closes panels. Touch screens get a joystick; a finger drag looks around. `N` and `P` (or the buttons at the foot of an open panel) walk on to the next or previous work in the room. Hovering a work closes a set of brackets around it. The **Lighting** switch (bottom left) sets day or night, and the **Graphics** switch sets **High** (shadows, bloom, mirrored floors, sharper textures) or **Fast** (for phones and small GPUs; the default there). Gallery links such as `#publications` (and the old `#software`) still work.
 
 ### Rendering
 
@@ -30,7 +55,9 @@ The **catalogue** button lists every work as text (the accessible view), and the
 - **Polished floors** (high quality): one planar reflection shared by every floor, blurred by roughness and strengthened towards the horizon (`reflect.js`)
 - **Post-processing** (high quality): multisampled HDR, bloom on lamps, light panels and holograms, a highlight roll-off that leaves artwork colours untouched, and a fine dither against banding
 - **Sharp exhibits**: wall texts are painted supersampled, and photos are sized to their frame, so close-ups stay crisp without filling GPU memory; textures load and unload by distance
-- Rendering is on demand: frames are drawn only while something moves or animates nearby
+- **Day and night** ease into each other over a second and a half; at night the architectural and picture lights take over from the skylight
+- **Public rooms**: a honed stone dado with a bronze cap, bronze inlay rings under the oculus; a natural ~60° vertical field of view on wide screens
+- Rendering is on demand: frames are drawn only while something moves or animates nearby, nothing runs while the tab is hidden, and demonstrations, people and residents off screen keep time without being drawn
 
 ## 🏗️ Structure
 
@@ -55,7 +82,9 @@ The **catalogue** button lists every work as text (the accessible view), and the
 |   |-- css/museum.css      # HUD, panels, catalogue and loader
 |   |-- js/museum/          # world (building, lights), exhibits, art (canvas painters),
 |   |                       # controls, panels, post (bloom pipeline), reflect (mirrored floors),
-|   |                       # visitors, data, main
+|   |                       # visitors, data, main, nav (walkable grid and A*),
+|   |                       # research + research-defs + demos-a/demos-b + demo-kit (demonstrations),
+|   |                       # companions + cat-model (robots and cats), audio (optional sound)
 |   |-- museum/             # Generated gallery copies, textures/ (Poly Haven surfaces), people/ (visitors)
 |   |-- images/             # Originals: certificates, covers, news, profile, projects, venues, ...
 |   |-- icons/, logos/      # Skill, social and organisation logos
@@ -107,6 +136,10 @@ git config core.hooksPath .githooks
 ```
 
 On each commit it stamps today's date into the JSON-LD `dateModified` and every `<lastmod>` in `sitemap.xml`. Skip it for a single commit with `SKIP_DATESTAMP=1 git commit ...`.
+
+### Without WebGL
+
+If a browser cannot run WebGL, the page lists the whole collection as plain HTML instead (biography, education, experience, publications with DOI links, projects, tools and awards), alongside links to the classic portfolio and profiles.
 
 ## 🌐 Browser Support
 

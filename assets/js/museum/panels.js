@@ -5,6 +5,7 @@ import { escapeHtml, formatAuthors, formatDate, stripTags } from './util.js';
 import { PUB_TYPES, SELF, isFirstAuthor, isCorresponding, pubVenue, textureInfo } from './data.js';
 import { ROOMS, ROOM_BY_ID } from './world.js';
 import { paintPoster, drawFloorPlan } from './art.js';
+import { INTEREST_DEMOS } from './research-defs.js';
 
 const e = escapeHtml;
 
@@ -58,7 +59,7 @@ export class Panels {
     /** The works hung in the same room, in hanging order (for previous / next). */
     neighbours(exhibit) {
         if (!exhibit || exhibit.catalogue === false || !exhibit.view) return [];
-        return this.museum.exhibits.filter((x) => x.room === exhibit.room && x.catalogue !== false && x.view && x.kind !== 'link');
+        return this.museum.exhibits.filter((x) => x.room === exhibit.room && x.catalogue !== false && x.view && x.kind !== 'link' && x.kind !== 'coauthor');
     }
 
     /** Walk on to the next (or previous) work in the room. */
@@ -74,6 +75,10 @@ export class Panels {
         if (exhibit.kind === 'link') {
             window.open(exhibit.payload.href, '_blank', 'noopener');
             return;
+        }
+        if (!this.isOpen) {
+            const active = document.activeElement;
+            this.returnFocus = active && active !== document.body && !this.el.contains(active) ? active : null;
         }
         if (!push) this.stack = [];
         this.stack.push(exhibit);
@@ -92,6 +97,70 @@ export class Panels {
         document.body.classList.remove('panel-open');
         this.stack = [];
         this.onChange?.();
+        // Give focus back to whatever opened the panel (or the museum view).
+        const back = this.returnFocus;
+        this.returnFocus = null;
+        const target = back && back.isConnected && !back.closest('[aria-hidden="true"]') ? back : document.getElementById('scene');
+        if (this.el.contains(document.activeElement) || document.activeElement === document.body) target?.focus({ preventScroll: true });
+    }
+
+    /** A demonstration changed stage or play state: update its open panel in place. */
+    refreshDemo(inst) {
+        const cur = this.current;
+        if (!this.isOpen || !cur || cur.kind !== 'demo' || cur.payload !== inst) return;
+        this.body.querySelectorAll('.demo-stages li').forEach((li, i) => {
+            const on = i === inst.stage;
+            li.classList.toggle('is-current', on);
+            li.classList.toggle('is-done', i < inst.stage);
+            const btn = li.querySelector('button');
+            if (on) btn.setAttribute('aria-current', 'step'); else btn.removeAttribute('aria-current');
+        });
+        const toggle = this.body.querySelector('[data-demo-toggle]');
+        if (toggle) {
+            toggle.innerHTML = inst.playing ? '<i class="fas fa-pause" aria-hidden="true"></i> Pause' : '<i class="fas fa-play" aria-hidden="true"></i> Play';
+            toggle.setAttribute('aria-pressed', String(!inst.playing));
+        }
+        const progress = this.body.querySelector('[data-demo-progress]');
+        if (progress) progress.textContent = inst.progressText();
+    }
+
+    /** Portfolio items a demonstration relates to, as exhibits. */
+    related(rel = {}) {
+        const by = this.museum.byId;
+        const out = [];
+        const add = (x) => { if (x && !out.includes(x)) out.push(x); };
+        for (const id of rel.projects || []) add(by.get(`project-${id}`));
+        for (const id of rel.tools || []) add(by.get(`tool-${id}`));
+        for (const title of rel.interests || []) add(this.museum.exhibits.find((x) => x.kind === 'interest' && x.payload?.title === title));
+        if (rel.topics?.length) {
+            this.data.pubList.filter((p) => (p.topics || []).some((t) => rel.topics.includes(t)))
+                .sort((a, b) => (b.year || 0) - (a.year || 0)).slice(0, 6)
+                .forEach((p) => add(by.get(`pub-${p._key}`)));
+        }
+        return out;
+    }
+
+    /** Tools, projects and papers that show a skill in use (matched by name). */
+    appliedIn(skill) {
+        const name = String(skill.name || '');
+        const terms = new Set([name]);
+        terms.add(name.replace(/^(Autodesk|Bentley|Graphisoft|OpenAI|GitHub)\s+/i, ''));
+        terms.add(name.replace(/\s+(3D|4D)$/i, ''));
+        if (/rhinoceros/i.test(name)) terms.add('Rhino');
+        const words = [...terms].filter((t) => t.length >= 3 || t === 'C#');
+        if (!words.length) return [];
+        const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`(^|[^A-Za-z0-9])(${words.map(esc).join('|')})(?![A-Za-z0-9])`, 'i');
+        const hits = [];
+        for (const x of this.museum.exhibits) {
+            if (!['tool', 'project', 'publication', 'demo'].includes(x.kind) || !x.payload) continue;
+            let text;
+            if (x.kind === 'demo') text = `${x.payload.def.title} ${x.payload.def.description}`;
+            else if (x.kind === 'publication') text = `${x.payload.title} ${(x.payload.topics || []).join(' ')}`;
+            else { try { text = JSON.stringify(x.payload); } catch { text = ''; } }
+            if (re.test(text)) hits.push(x);
+        }
+        return hits.slice(0, 10);
     }
 
     back() {
@@ -278,10 +347,13 @@ const RENDERERS = {
             const pubs = this.data.pubList.filter((p) => !interest.topic || (p.topics || []).includes(interest.topic));
             related = section(`Related publications (${pubs.length})`, `<ul class="pub-list">${pubs.map((p) => this.pubRow(p)).join('')}</ul>`);
         }
+        const demoKey = INTEREST_DEMOS[interest.title];
+        const demo = demoKey && this.museum.byId.get(`demo-${demoKey}`);
         return {
             eyebrow: 'Research interest',
             html: `${this.img(interest.image, interest.title)}
                 <p class="lead">${e(interest.description)}</p>
+                ${demo ? `<p><button type="button" class="btn btn-primary" data-action="go:${e(demo.id)}"><i class="fas fa-play" aria-hidden="true"></i> See the live demonstration</button></p>` : ''}
                 ${interest.topic ? `<p class="muted">Topic: ${chips([interest.topic])}</p>` : ''}
                 ${related}`
         };
@@ -539,10 +611,11 @@ const RENDERERS = {
             html: `
                 <div class="skill-head" style="--skill:${e(color)}">
                     ${skillIcon(this.data, skill)}
-                    <div>${bar(skill.level, skill.percentage, 100, `${skill.percentage}%`)}
+                    <div><p class="skill-level"><span class="chip">${e(skill.level)}</span> <span class="muted small">self-assessed</span></p>
                     <p class="muted">${skill.years ? `${e(skill.years)} year${skill.years === 1 ? '' : 's'} of experience` : ''}</p></div>
                 </div>
                 <p>${e(skill.description)}</p>
+                ${(() => { const used = this.appliedIn(skill); return used.length ? section('Applied in', this.exhibitList(used)) : ''; })()}
                 ${section(`More in ${category.title}`, skillBars(this.data, category, color, skill.name))}`
         };
     },
@@ -706,6 +779,86 @@ const RENDERERS = {
         };
     },
 
+    demo(inst) {
+        const d = inst.def;
+        const k = e(d.key);
+        const related = this.related(d.related);
+        return {
+            eyebrow: 'Research demonstration',
+            title: d.title,
+            html: `
+                <p class="badge-row"><span class="badge badge-sim"><i class="fas fa-flask" aria-hidden="true"></i> Conceptual simulation</span>
+                    <span class="muted small" data-demo-progress>${e(inst.progressText())}</span></p>
+                <p class="lead">${e(d.description)}</p>
+                <div class="demo-controls" role="group" aria-label="Demonstration controls">
+                    <button type="button" class="btn btn-sm" data-action="demo:${k}:replay"><i class="fas fa-rotate-left" aria-hidden="true"></i> Replay</button>
+                    <button type="button" class="btn btn-sm" data-action="demo:${k}:prev" aria-label="Previous stage"><i class="fas fa-backward-step" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-sm" data-action="demo:${k}:toggle" data-demo-toggle aria-pressed="${!inst.playing}">${inst.playing ? '<i class="fas fa-pause" aria-hidden="true"></i> Pause' : '<i class="fas fa-play" aria-hidden="true"></i> Play'}</button>
+                    <button type="button" class="btn btn-sm" data-action="demo:${k}:next" aria-label="Next stage"><i class="fas fa-forward-step" aria-hidden="true"></i></button>
+                </div>
+                <ol class="demo-stages">${d.stages.map((st, i) => `
+                    <li class="${i === inst.stage ? 'is-current' : i < inst.stage ? 'is-done' : ''}">
+                        <button type="button" data-action="demo:${k}:stage:${i}"${i === inst.stage ? ' aria-current="step"' : ''}>
+                            <span class="demo-step">${i + 1}</span><span><strong>${e(st.label)}</strong><small>${e(st.caption)}</small></span>
+                        </button>
+                    </li>`).join('')}</ol>
+                ${d.key === 'bim' ? '<p class="muted"><i class="fas fa-hand-pointer" aria-hidden="true"></i> Click any element of the model to read its properties.</p>' : ''}
+                <p class="muted small">This model illustrates how the method works. It is not a recording of an experiment and shows no measured results.</p>
+                ${related.length ? section('Related work', this.exhibitList(related)) : ''}`
+        };
+    },
+
+    bimElement(info) {
+        return {
+            eyebrow: `${info.ifcClass} · BIM element`,
+            title: info.name,
+            html: `
+                <p class="badge-row"><span class="badge badge-sim"><i class="fas fa-cube" aria-hidden="true"></i> Selected in the model</span></p>
+                ${metaGrid(info.rows)}
+                <p class="muted small">${e(info.note)}</p>
+                <p class="muted">Use the back arrow to return to the demonstration, or click another element.</p>`
+        };
+    },
+
+    resident(payload) {
+        const s = payload.describe?.() || {};
+        if (payload.robot) {
+            return {
+                eyebrow: 'Museum residents',
+                title: payload.robot.name,
+                html: `
+                    <p class="lead">One of two cleaning robots that look after the floors of the lobby, the Grand Hall and the contact room.</p>
+                    ${metaGrid([['Now', s.state], ['Battery', `${s.battery}%`], ['Passenger', s.rider ? `${s.rider} the cat` : 'None']])}
+                    <p>It plans each trip over the same walkable grid that guides your own clicks, spirals over a spot to clean it, waits for anyone in its way, and drives back to its charging dock when the battery runs low.</p>
+                    <p class="muted small">A small working example of robot navigation in a mapped building; see the robot navigation demonstration in Gallery VI.</p>
+                    <p><button type="button" class="btn" data-action="go:demo-nav"><i class="fas fa-route" aria-hidden="true"></i> Robot navigation demonstration</button></p>`
+            };
+        }
+        const cat = payload.cat;
+        return {
+            eyebrow: 'Museum residents',
+            title: cat.name,
+            html: `
+                <p class="lead">${e(cat.name)} is one of the museum’s two cats.</p>
+                ${metaGrid([['Now', s.state]])}
+                <p>The cats wander the galleries, nap on the benches, and sometimes hitch a ride on a cleaning robot.</p>`
+        };
+    },
+
+    coauthor(author) {
+        const names = [author.name, ...(author.aliases || [])];
+        const pubs = this.data.pubList.filter((p) => (p.authors || []).some((a) => names.includes(a)));
+        const affiliation = author.university || author.Industry || '';
+        return {
+            eyebrow: 'Co-author',
+            title: author.name,
+            html: `
+                ${metaGrid([['Affiliation', affiliation], ['Country', author.country], ['Joint publications', String(author.papers)]])}
+                ${pubs.length ? section(`Publications together (${pubs.length})`, `<ul class="pub-list">${pubs.map((p) => this.pubRow(p)).join('')}</ul>`) : ''}
+                <p><button type="button" class="btn btn-ghost" data-exhibit="collab-panel"><i class="fas fa-circle-nodes" aria-hidden="true"></i> All collaborations</button></p>`
+        };
+    },
+
     fallback(payload, exhibit) {
         return { html: `<p>${e(exhibit.subtitle || '')}</p>` };
     }
@@ -786,7 +939,7 @@ function skillBars(data, category, color, current) {
     return `<ul class="skill-list">${(category.skills || []).map((s) => `
         <li class="${s.name === current ? 'current' : ''}" style="--skill:${e(color)}">
             ${skillIcon(data, s)}
-            <div>${bar(`${s.name} · ${s.level}`, s.percentage, 100, `${s.percentage}%`)}
+            <div><div class="bar-label"><span>${e(s.name)}</span><span>${e(s.level)}</span></div>
             <small>${e(s.description)}${s.years ? ` · ${e(s.years)} yr${s.years === 1 ? '' : 's'}` : ''}</small></div>
         </li>`).join('')}</ul>`;
 }
@@ -804,7 +957,8 @@ export function controlsHelp() {
         <li><span class="help-ico"><i class="fas fa-arrows-up-down-left-right" aria-hidden="true"></i></span><span>Drag with the left or right mouse button to look around, standing still or walking. Scroll to step forward or back.</span></li>
         <li><span class="help-ico"><i class="fas fa-hand-pointer" aria-hidden="true"></i></span><span>Click the floor to walk there. Click any work to read about it. Drag the globe in Gallery VIII to spin it.</span></li>
         <li><span class="help-ico"><i class="fas fa-mobile-screen" aria-hidden="true"></i></span><span>On touch screens the joystick walks, a finger drag looks and a tap selects.</span></li>
-        <li><span class="help-ico"><i class="fas fa-keyboard" aria-hidden="true"></i></span><span><kbd>1</kbd>–<kbd>0</kbd> rooms · <kbd>M</kbd> map · <kbd>C</kbd> catalogue · <kbd>V</kbd> hologram view · <kbd>N</kbd> <kbd>P</kbd> next and previous work · <kbd>Esc</kbd> close</span></li>
+        <li><span class="help-ico"><i class="fas fa-route" aria-hidden="true"></i></span><span>Walk up to a work and press <kbd>Enter</kbd> to read about it. Demonstrations can be replayed and stepped through from their panel.</span></li>
+        <li><span class="help-ico"><i class="fas fa-keyboard" aria-hidden="true"></i></span><span><kbd>1</kbd>–<kbd>0</kbd> rooms · <kbd>R</kbd> level the view · <kbd>U</kbd> sound · <kbd>M</kbd> map · <kbd>C</kbd> catalogue · <kbd>V</kbd> hologram view · <kbd>N</kbd> <kbd>P</kbd> next and previous work · <kbd>Esc</kbd> close</span></li>
     </ul>`;
 }
 

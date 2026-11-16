@@ -179,6 +179,94 @@ export class Controls {
         this.apply();
     }
 
+    /**
+     * Walk along a planned path (a list of {x, z}, starting here). The pace
+     * builds up, holds and eases off before the end; the view turns at a
+     * comfortable, capped rate. With `lookAlong` the view follows the way
+     * ahead and only turns to the final yaw over the last stretch.
+     * Resolves true on arrival, false when cancelled.
+     */
+    followPath(points, { yaw, pitch, lookAlong = false, speed } = {}) {
+        this.cancelGlide();
+        const pts = points.map((p) => ({ x: p.x, z: p.z }));
+        if (pts.length < 2) pts.unshift({ x: this.x, z: this.z });
+        const cum = [0];
+        for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z));
+        const L = cum[cum.length - 1];
+        return new Promise((resolve) => {
+            this.glide = {
+                path: true, pts, cum, L, s: 0, v: 0,
+                vmax: speed ?? clamp(L / 3.2, 2.4, 6.2),
+                yaw: yaw ?? null, pitch: pitch ?? null, lookAlong, resolve
+            };
+        });
+    }
+
+    /** A point along the current path, `s` metres from its start. */
+    pathPoint(g, s) {
+        s = clamp(s, 0, g.L);
+        let i = 1;
+        while (i < g.cum.length - 1 && g.cum[i] < s) i += 1;
+        const a = g.pts[i - 1];
+        const b = g.pts[i];
+        const seg = g.cum[i] - g.cum[i - 1] || 1;
+        const t = (s - g.cum[i - 1]) / seg;
+        return { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t };
+    }
+
+    stepPath(dt) {
+        const g = this.glide;
+        const left = g.L - g.s;
+        // Accelerate to cruising pace, brake so as to stop exactly at the end.
+        const want = Math.min(g.vmax, Math.sqrt(2 * 2.8 * Math.max(0, left)));
+        g.v += clamp(want - g.v, -6 * dt, 3.2 * dt);
+        g.s = Math.min(g.L, g.s + Math.max(g.v, left > 0.02 ? 0.15 : 0) * dt);
+        const p = this.pathPoint(g, g.s);
+        this.x = p.x;
+        this.z = p.z;
+        this.stepDist = (this.stepDist || 0) + g.v * dt;
+        if (this.stepDist > 0.72 && g.v > 0.6) {
+            this.stepDist = 0;
+            this.onStep?.(g.v);
+        }
+        // Where to look: down the path while walking, then the requested yaw.
+        let wantYaw = g.yaw ?? this.yaw;
+        if (g.lookAlong && g.L - g.s > 0.3) {
+            const ahead = this.pathPoint(g, g.s + 1.6);
+            const dx = ahead.x - this.x;
+            const dz = ahead.z - this.z;
+            if (Math.hypot(dx, dz) > 0.2) {
+                const along = Math.atan2(-dx, -dz);
+                const k = g.yaw === null ? 0 : clamp(1 - (g.L - g.s) / 2.2, 0, 1);
+                wantYaw = along + wrapAngle(wantYaw - along) * k;
+            }
+        }
+        const dyaw = wrapAngle(wantYaw - this.yaw);
+        const maxTurn = (this.calm ? 1.1 : 1.7) * dt;
+        this.yaw += clamp(dyaw * (1 - Math.exp(-dt * 5)), -maxTurn, maxTurn);
+        if (g.pitch !== null) this.pitch += (g.pitch - this.pitch) * (1 - Math.exp(-dt * 3.5));
+        this.bob *= Math.exp(-dt * 8);
+        const settled = Math.abs(wrapAngle(wantYaw - this.yaw)) < 0.01 && (g.pitch === null || Math.abs(g.pitch - this.pitch) < 0.005);
+        if (g.s >= g.L - 1e-4 && settled) {
+            this.glide = null;
+            this.vx = 0;
+            this.vz = 0;
+            this.resolveCollisions();
+            g.resolve(true);
+        }
+    }
+
+    /** Level the view and stop: a way back from any odd angle. */
+    resetView() {
+        this.cancelGlide();
+        this.keys.clear();
+        this.vx = 0;
+        this.vz = 0;
+        this.wheelImpulse = 0;
+        this.lookPitch = -this.pitch;
+        this.lookYaw = 0;
+    }
+
     /** Animate to a pose; resolves when there, or when cancelled. */
     glideTo(target, duration) {
         this.cancelGlide();
@@ -217,6 +305,11 @@ export class Controls {
 
     /** Advance by dt seconds. Returns true when the view changed. */
     update(dt) {
+        if (this.glide?.path) {
+            this.stepPath(dt);
+            this.apply();
+            return true;
+        }
         if (this.glide) {
             const g = this.glide;
             this.bob *= Math.exp(-dt * 8);
@@ -301,8 +394,14 @@ export class Controls {
             this.vx = 0;
             this.vz = 0;
         }
+        const pace = Math.hypot(this.vx, this.vz);
+        // One footfall every ~0.72 m walked, for the footsteps sound.
+        this.stepDist = (this.stepDist || 0) + pace * dt;
+        if (this.stepDist > 0.72 && pace > 0.6) {
+            this.stepDist = 0;
+            this.onStep?.(pace);
+        }
         if (!this.calm) {
-            const pace = Math.hypot(this.vx, this.vz);
             this.stride += pace * dt;
             const want = Math.min(1, pace / WALK);
             this.bob += (want - this.bob) * (1 - Math.exp(-dt * 7));
@@ -363,6 +462,10 @@ export class Controls {
         this.camera.position.set(this.x, EYE + Math.sin(this.stride * 2.7) * 0.02 * this.bob, this.z);
         this.camera.rotation.set(this.pitch, this.yaw, 0);
     }
+}
+
+function wrapAngle(a) {
+    return ((a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
 }
 
 const MOVE_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight']);

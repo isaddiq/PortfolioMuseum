@@ -32,6 +32,7 @@ const turnTo = (from, to) => ((to - from + Math.PI) % (Math.PI * 2) + Math.PI * 
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
 const _c = new THREE.Vector3();
+const _sphere = new THREE.Sphere(new THREE.Vector3(), 1.1);
 
 export class Visitors {
     constructor({ scene, museum, world, count = 10 }) {
@@ -50,21 +51,52 @@ export class Visitors {
 
     /** Load the motions, then each person in turn; they join as they arrive. */
     async load() {
+        this.loading = true;
         const motions = await fetch(`${DIR}motions.json`).then((r) => r.json());
+        this.motions = motions;
         this.clips = {};
         for (const [sex, set] of Object.entries(motions.clips)) {
             this.clips[sex] = Object.fromEntries(Object.entries(set).map(([name, json]) => [name, { json, clip: THREE.AnimationClip.parse(json) }]));
         }
         this.targets = this.museum.exhibits.filter((x) => x.view && x.focus && x.focus.y < 3.4 &&
             !['link', 'visitors', 'collabToggle', 'tv', 'room'].includes(x.kind) && roomAt(x.focus.x, x.focus.z));
-        const loader = new GLTFLoader();
-        for (const [index, member] of motions.cast.slice(0, this.count).entries()) {
+        await this.loadMore();
+        this.loading = false;
+    }
+
+    /** Load people until there are as many as wanted (one at a time, so each appears as it arrives). */
+    async loadMore() {
+        const loader = (this.loader ||= new GLTFLoader());
+        const cast = this.motions.cast;
+        while (this.people.length < Math.min(this.count, cast.length)) {
+            const index = this.people.length;
+            const member = cast[index];
             try {
                 const gltf = await loader.loadAsync(DIR + member.file);
                 this.people.push(this.spawn(gltf.scene, member.sex, index));
             } catch (error) {
                 console.warn('Visitor could not load', member.file, error);
+                cast.splice(index, 1);
             }
+            // Let a frame or two render between arrivals.
+            await new Promise((r) => setTimeout(r, 60));
+        }
+    }
+
+    /** The quality switch: more people in High, fewer in Fast. */
+    setCount(n) {
+        this.count = n;
+        this.people.forEach((p, i) => {
+            p.active = i < n;
+            if (!p.active) {
+                p.root.visible = false;
+                p.camera.group.visible = false;
+                p.collider.x = p.collider.z = 1e5;
+            }
+        });
+        if (this.motions && !this.loading && this.people.length < n) {
+            this.loading = true;
+            this.loadMore().finally(() => { this.loading = false; });
         }
     }
 
@@ -120,8 +152,9 @@ export class Visitors {
 
         const stride = set.walk.json.speed || 1.3;
         const person = {
-            index, root, model, mixer, actions, bones, camera, collider, sex,
-            speed: stride * (0.92 + Math.random() * 0.12), stride,
+            index, root, model, mixer, actions, bones, camera, collider, sex, active: index < this.count,
+            pendingDt: 0, headYaw: 0, headWant: 0, headTimer: 1 + Math.random() * 3,
+            speed: stride * (0.84 + Math.random() * 0.26), stride,
             weights: { walk: 0, idle: 1, look: 0, photo: 0 },
             x: 0, z: 0, yaw: 0, v: 0, lean: 0, mode: 'look', activity: 'idle', timer: 2 + Math.random() * 6,
             path: [], target: null, wait: 0, raised: 0, flashed: false, flash: 0
@@ -366,21 +399,53 @@ export class Visitors {
     // -----------------------------------------------------------------------
 
     /** Advance everyone; returns true when someone near the visitor moved. */
-    update(t, dt, px, pz) {
+    update(t, dt, px, pz, frustum) {
         let visible = false;
-        for (const p of this.people) {
-            this.think(p, dt, px, pz);
-            if (Math.hypot(p.x - px, p.z - pz) < ACTIVE_RADIUS) {
-                this.animate(p, dt);
+        const live = this.people.filter((p) => p.active);
+        for (const p of live) this.think(p, dt, px, pz);
+        this.separate(live, dt);
+        for (const p of live) {
+            const near = Math.hypot(p.x - px, p.z - pz) < ACTIVE_RADIUS;
+            _sphere.center.set(p.x, 0.9, p.z);
+            const onScreen = near && (!frustum || frustum.intersectsSphere(_sphere));
+            if (onScreen) {
+                // Catch up on the time spent off screen, so the motion carries on.
+                this.animate(p, Math.min(0.5, dt + p.pendingDt));
+                p.pendingDt = 0;
                 visible = true;
             } else {
-                p.root.visible = false;
+                p.pendingDt += dt;
+                p.root.visible = near;
+                if (near) this.place(p);
                 p.camera.group.visible = false;
             }
             p.collider.x = p.x;
             p.collider.z = p.z;
         }
         return visible;
+    }
+
+    /** People never stand in each other: anyone too close is eased apart, if there is room. */
+    separate(list, dt) {
+        const MIN = 0.62;
+        for (let i = 0; i < list.length; i++) {
+            for (let j = i + 1; j < list.length; j++) {
+                const a = list[i];
+                const b = list[j];
+                const dx = b.x - a.x;
+                const dz = b.z - a.z;
+                const d = Math.hypot(dx, dz);
+                if (d >= MIN || d < 1e-4) continue;
+                const push = Math.min((MIN - d) * 0.5, 0.6 * dt);
+                const nx = dx / d;
+                const nz = dz / d;
+                for (const [p, s] of [[a, -1], [b, 1]]) {
+                    const x = p.x + nx * push * s;
+                    const z = p.z + nz * push * s;
+                    if (roomAt(x, z) && this.clear(x, z, RADIUS)) { p.x = x; p.z = z; }
+                }
+            }
+        }
     }
 
     /** Stop at a work: stand, perhaps look around, perhaps take a picture. */
@@ -390,8 +455,8 @@ export class Visitors {
         p.moving = false;
         p.v = 0;
         const roll = Math.random();
-        p.plans = roll < 0.5 ? ['photo'] : roll < 0.75 ? ['look'] : [];
-        p.nextActivity = 1 + Math.random() * 2;
+        p.plans = roll < 0.12 ? ['photo'] : roll < 0.42 ? ['look'] : [];
+        p.nextActivity = 1.2 + Math.random() * 3;
         this.setActivity(p, 'idle');
     }
 
@@ -441,7 +506,7 @@ export class Visitors {
             p.v = Math.max(0, p.v - BRAKE * dt);
             if (p.v < 0.05) {
                 p.v = 0;
-                this.arrive(p, 6 + Math.random() * 6);
+                this.arrive(p, 4 + Math.random() * Math.random() * 14);
             }
             return;
         }
@@ -455,8 +520,8 @@ export class Visitors {
             return d < range && (tx * dx + tz * dz) / (d * (dist || 1) + 1e-6) > 0.4;
         };
         // Someone in the way: slow early, stop short.
-        const near = ahead(px, pz, 1.2) || this.people.some((o) => o !== p && ahead(o.x, o.z, 0.95));
-        const close = near || ahead(px, pz, 2.2) || this.people.some((o) => o !== p && ahead(o.x, o.z, 1.7));
+        const near = ahead(px, pz, 1.2) || this.people.some((o) => o !== p && o.active && ahead(o.x, o.z, 0.95));
+        const close = near || ahead(px, pz, 2.2) || this.people.some((o) => o !== p && o.active && ahead(o.x, o.z, 1.7));
         if (near) {
             p.wait += dt;
             if (p.wait > 3 + p.index * 0.3) {
@@ -521,6 +586,14 @@ export class Visitors {
         // would freeze mid-stride, so it never drops under half speed.
         p.actions.walk.setEffectiveTimeScale(Math.max(0.5, p.v / p.stride));
         p.mixer.update(dt);
+        // A little life in the head: glance about while standing, look ahead while walking.
+        p.headTimer -= dt;
+        if (p.headTimer <= 0) {
+            p.headTimer = 1.5 + Math.random() * 3.5;
+            p.headWant = walking ? (Math.random() - 0.5) * 0.25 : (Math.random() - 0.5) * 0.8;
+        }
+        p.headYaw += (p.headWant - p.headYaw) * (1 - Math.exp(-dt * 2.5));
+        if (!this.calm && p.activity !== 'photo') p.bones.head.rotateX(p.headYaw * (1 - p.weights.look));
         // Lean a touch into turns, the way people bank through a corner.
         const bank = walking && !this.calm ? clamp(-turn / Math.max(dt, 1e-4), -TURN, TURN) * 0.018 * pace : 0;
         p.lean += (bank - p.lean) * (1 - Math.exp(-dt * 5));

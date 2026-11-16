@@ -760,7 +760,7 @@ export function paintSkillTile(skill, logo, color) {
     }
     const blocks = [
         { text: skill.name, size: 42, weight: 700, family: SERIF, color: INK, align: 'center', maxLines: 2, lineHeight: 1.05, after: 10 },
-        { text: `${skill.level} · ${skill.percentage}%`, size: 25, weight: 600, color, align: 'center', after: 4 },
+        { text: `${skill.level}`, size: 25, weight: 600, color, align: 'center', after: 4 },
         skill.years ? { text: `${skill.years} yr${skill.years === 1 ? '' : 's'}`, size: 22, color: MUTED, align: 'center' } : null
     ];
     const fit = fitBlocks(ctx, blocks, W - 40, H - 260 - 30, 0.5);
@@ -1027,65 +1027,143 @@ export function paintSocialTile(social) {
     return canvas;
 }
 
-export function paintMapPlaque(location) {
+/** Web Mercator: world pixel coordinates of a point at a zoom level (256-px tiles). */
+function mercator(lat, lng, zoom) {
+    const n = 256 * 2 ** zoom;
+    const r = (lat * Math.PI) / 180;
+    return [((lng + 180) / 360) * n, ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n];
+}
+
+/**
+ * The location plaque: a real OpenStreetMap map centred on the building,
+ * its footprint outlined, a pin and the address. OSM tiles allow
+ * cross-origin use, so they can be drawn into the texture; the attribution
+ * is printed on the map. Without a connection it falls back to a drawn map.
+ */
+export async function paintMapPlaque(location) {
     const W = 1200;
     const H = 900;
+    const MAP_H = Math.round(H * 0.62);
     const canvas = makeCanvas(W, H);
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#e9efe8';
     ctx.fillRect(0, 0, W, H);
-    const rand = seededRandom(37246);
-    // Stylised streets and blocks.
-    ctx.strokeStyle = '#ffffff';
-    for (let i = 0; i < 14; i++) {
-        ctx.lineWidth = 6 + rand() * 18;
-        ctx.beginPath();
-        const vertical = i % 2 === 0;
-        const t = rand() * (vertical ? W : H);
-        if (vertical) {
-            ctx.moveTo(t, 0);
-            ctx.bezierCurveTo(t + rand() * 200 - 100, H * 0.3, t + rand() * 200 - 100, H * 0.7, t + rand() * 100 - 50, H);
-        } else {
-            ctx.moveTo(0, t);
-            ctx.bezierCurveTo(W * 0.3, t + rand() * 200 - 100, W * 0.7, t + rand() * 200 - 100, W, t + rand() * 100 - 50);
+
+    const Z = 17;
+    const [cx, cy] = mercator(location.lat, location.lng, Z);
+    const px = W * 0.5;
+    const py = MAP_H * 0.5;
+    const toCanvas = (lat, lng) => {
+        const [x, y] = mercator(lat, lng, Z);
+        return [px + (x - cx), py + (y - cy)];
+    };
+    const x0 = Math.floor((cx - px) / 256);
+    const y0 = Math.floor((cy - py) / 256);
+    const x1 = Math.floor((cx + (W - px)) / 256);
+    const y1 = Math.floor((cy + (MAP_H - py)) / 256);
+    const jobs = [];
+    for (let ty = y0; ty <= y1; ty++) {
+        for (let tx = x0; tx <= x1; tx++) {
+            jobs.push(loadImage(`https://tile.openstreetmap.org/${Z}/${tx}/${ty}.png`).then((img) => ({ img, tx, ty })));
         }
+    }
+    const tiles = await Promise.all(jobs);
+    const ok = tiles.filter((t) => t.img).length;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, MAP_H);
+    ctx.clip();
+    if (ok >= tiles.length * 0.5) {
+        for (const { img, tx, ty } of tiles) {
+            if (img) ctx.drawImage(img, Math.round(px + tx * 256 - cx), Math.round(py + ty * 256 - cy), 256, 256);
+        }
+    } else {
+        // Offline: a drawn stand-in.
+        const rand = seededRandom(37246);
+        ctx.strokeStyle = '#ffffff';
+        for (let i = 0; i < 14; i++) {
+            ctx.lineWidth = 6 + rand() * 18;
+            ctx.beginPath();
+            const vertical = i % 2 === 0;
+            const t = rand() * (vertical ? W : MAP_H);
+            if (vertical) { ctx.moveTo(t, 0); ctx.bezierCurveTo(t + rand() * 200 - 100, MAP_H * 0.3, t + rand() * 200 - 100, MAP_H * 0.7, t + rand() * 100 - 50, MAP_H); }
+            else { ctx.moveTo(0, t); ctx.bezierCurveTo(W * 0.3, t + rand() * 200 - 100, W * 0.7, t + rand() * 200 - 100, W, t + rand() * 100 - 50); }
+            ctx.stroke();
+        }
+    }
+    // The building itself, outlined from its OpenStreetMap footprint.
+    if (location.footprint?.length > 2) {
+        ctx.beginPath();
+        location.footprint.forEach(([lat, lng], i) => {
+            const [x, y] = toCanvas(lat, lng);
+            if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(194,65,12,0.45)';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#c2410c';
         ctx.stroke();
     }
-    ctx.fillStyle = 'rgba(132,176,120,0.45)';
-    for (let i = 0; i < 6; i++) {
-        ctx.beginPath();
-        ctx.ellipse(rand() * W, rand() * H * 0.6, 60 + rand() * 120, 40 + rand() * 80, rand() * 3, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    // Pin.
-    const px = W * 0.5;
-    const py = H * 0.36;
-    ctx.fillStyle = 'rgba(194,65,12,0.18)';
+    // Pin, just above the building, and its name.
+    const [bx, by] = toCanvas(location.lat, location.lng);
+    const tipY = by - 34;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.beginPath();
-    ctx.arc(px, py + 40, 120, 0, Math.PI * 2);
+    ctx.ellipse(bx, by - 2, 16, 6, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#c2410c';
     ctx.beginPath();
-    ctx.arc(px, py, 40, Math.PI, 0);
-    ctx.lineTo(px, py + 90);
+    ctx.arc(bx, tipY - 46, 32, Math.PI * 0.82, Math.PI * 0.18);
+    ctx.lineTo(bx, tipY + 6);
     ctx.closePath();
     ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(px, py, 15, 0, Math.PI * 2);
+    ctx.arc(bx, tipY - 46, 12, 0, Math.PI * 2);
     ctx.fill();
+    if (location.building) {
+        ctx.font = `700 26px ${SANS}`;
+        const label = location.building;
+        const lw = ctx.measureText(label).width + 36;
+        const lx = Math.min(W - lw - 20, bx + 44);
+        const ly = tipY - 96;
+        roundRect(ctx, lx, ly, lw, 48, 10);
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(194,65,12,0.7)';
+        ctx.stroke();
+        ctx.fillStyle = INK;
+        ctx.fillText(label, lx + 18, ly + 33);
+    }
+    // Required attribution.
+    ctx.font = `500 18px ${SANS}`;
+    const attr = '© OpenStreetMap contributors';
+    const aw = ctx.measureText(attr).width + 20;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(W - aw, MAP_H - 30, aw, 30);
+    ctx.fillStyle = '#333333';
+    ctx.fillText(attr, W - aw + 10, MAP_H - 9);
+    ctx.restore();
+
     // Address card.
-    const cy = H * 0.6;
-    ctx.fillStyle = 'rgba(251,249,245,0.96)';
-    ctx.fillRect(60, cy, W - 120, H - cy - 60);
+    const top = MAP_H;
+    ctx.fillStyle = '#fbf9f5';
+    ctx.fillRect(0, top, W, H - top);
+    ctx.fillStyle = '#c2410c';
+    ctx.fillRect(0, top, W, 6);
     const blocks = [
         { text: location.eyebrow || 'Campus', size: 22, weight: 700, color: GOLD, upper: true, spacing: 3, after: 8 },
         { text: location.name, size: 50, weight: 600, family: SERIF, color: INK, after: 4 },
         { text: location.sub, size: 24, color: MUTED, after: 10 },
         { text: [location.korean, ...(location.lines || [])].filter(Boolean).join(' · '), size: 24, color: INK, lineHeight: 1.4 }
     ];
-    const fit = fitBlocks(ctx, blocks, W - 200, H - cy - 120, 0.5);
-    drawLaid(ctx, fit.laid, 100, cy + 30, W - 200);
+    const fit = fitBlocks(ctx, blocks, W - 160, H - top - 70, 0.5);
+    drawLaid(ctx, fit.laid, 80, top + 36, W - 160);
     return canvas;
 }
 
