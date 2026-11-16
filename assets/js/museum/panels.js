@@ -767,10 +767,12 @@ const RENDERERS = {
                     <div class="mini-map tall" id="contact-map" aria-label="Map of Kyung Hee University"></div>
                     <p class="eyebrow-text">${e(loc.eyebrow)}</p>
                     <p class="lead">${e(loc.name)}</p>
+                    ${loc.building ? `<p><strong>${e(loc.building)}</strong></p>` : ''}
                     <p class="muted">${e(loc.sub)}</p>
                     <address><span lang="ko">${e(loc.korean)}</span><br>${(loc.lines || []).map(e).join('<br>')}</address>
                     <p class="btn-row">
                         ${linkButton(loc.directions, 'Get Directions', 'fas fa-location-arrow')}
+                        ${linkButton(loc.osm, 'View on OpenStreetMap', 'fas fa-map')}
                         <button type="button" class="btn btn-ghost" data-copy="${e(loc.copy)}"><i class="fas fa-copy" aria-hidden="true"></i> Copy Address</button>
                     </p>`)}
                 ${section('Profiles', socialLinks(profile.social))}
@@ -869,12 +871,17 @@ Panels.prototype.mountContactMap = async function (el, loc) {
     const L = await loadLeaflet();
     if (!L || !el.isConnected) return;
     const map = L.map(el, { center: [loc.lat, loc.lng], zoom: 17, scrollWheelZoom: false });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19
     }).addTo(map);
-    L.marker([loc.lat, loc.lng]).addTo(map);
-    L.circle([loc.lat, loc.lng], { color: '#3498db', fillColor: '#3498db', fillOpacity: 0.2, radius: 100 }).addTo(map);
+    // The building itself, outlined from its OpenStreetMap footprint.
+    if (loc.footprint?.length > 2) {
+        const outline = L.polygon(loc.footprint, { color: '#c2410c', weight: 2, fillColor: '#c2410c', fillOpacity: 0.35 }).addTo(map);
+        map.fitBounds(outline.getBounds(), { padding: [70, 70], maxZoom: 18 });
+    }
+    const label = [loc.building, loc.name].filter(Boolean).join('<br>');
+    L.marker([loc.lat, loc.lng], { title: loc.building || loc.name }).addTo(map).bindPopup(label).openPopup();
     setTimeout(() => map.invalidateSize(), 250);
     this.maps.push(map);
 };
