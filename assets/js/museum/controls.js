@@ -224,11 +224,6 @@ export class Controls {
         const p = this.pathPoint(g, g.s);
         this.x = p.x;
         this.z = p.z;
-        this.stepDist = (this.stepDist || 0) + g.v * dt;
-        if (this.stepDist > 0.72 && g.v > 0.6) {
-            this.stepDist = 0;
-            this.onStep?.(g.v);
-        }
         // Where to look: down the path while walking, then the requested yaw.
         let wantYaw = g.yaw ?? this.yaw;
         if (g.lookAlong && g.L - g.s > 0.3) {
@@ -395,12 +390,6 @@ export class Controls {
             this.vz = 0;
         }
         const pace = Math.hypot(this.vx, this.vz);
-        // One footfall every ~0.72 m walked, for the footsteps sound.
-        this.stepDist = (this.stepDist || 0) + pace * dt;
-        if (this.stepDist > 0.72 && pace > 0.6) {
-            this.stepDist = 0;
-            this.onStep?.(pace);
-        }
         if (!this.calm) {
             this.stride += pace * dt;
             const want = Math.min(1, pace / WALK);

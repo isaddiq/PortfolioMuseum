@@ -46,7 +46,7 @@ Every work has its caption sign-written on the wall above it, and wall texts, ga
 
 The **catalogue** button lists every work as text (the accessible view), and the arrow button at the top right opens the page-based portfolio at [isaddiq.github.io](https://isaddiq.github.io).
 
-**Controls:** drag with the left or right mouse button to look around, standing still or walking; `W` `A` `S` `D` or the arrow keys to walk (`Shift` to hurry); scroll to step; click the floor to walk there (the walk follows a planned path round furniture, plinths and walls, never through them); walk up to a work and press `Enter` (or tap the prompt) to read about it; `R` levels the view; `U` turns the optional sound on or off (footsteps, room tone, a soft motor hum near working demonstrations; off until you turn it on); `1`–`0` jump to a room, `M` map, `C` catalogue, `H` help, `Esc` closes panels. Touch screens get a joystick; a finger drag looks around. `N` and `P` (or the buttons at the foot of an open panel) walk on to the next or previous work in the room. Hovering a work closes a set of brackets around it. The **Lighting** switch (bottom left) sets day or night, and the **Graphics** switch sets **High** (shadows, bloom, mirrored floors, sharper textures) or **Fast** (for phones and small GPUs; the default there). Gallery links such as `#publications` (and the old `#software`) still work.
+**Controls:** drag with the left or right mouse button to look around, standing still or walking; `W` `A` `S` `D` or the arrow keys to walk (`Shift` to hurry); scroll to step; click the floor to walk there (the walk follows a planned path round furniture, plinths and walls, never through them); walk up to a work and press `Enter` (or tap the prompt) to read about it; `R` levels the view; `U` turns the optional relaxing music on or off (generative ambient pads, a soft bass and bell notes in a hall reverb, synthesised in the browser, plus a soft motor hum near working demonstrations; off until you turn it on); `1`–`0` jump to a room, `M` map, `C` catalogue, `H` help, `Esc` closes panels. Touch screens get a joystick; a finger drag looks around. `N` and `P` (or the buttons at the foot of an open panel) walk on to the next or previous work in the room. Hovering a work closes a set of brackets around it. The **Lighting** switch (bottom left) sets day or night, and the **Graphics** switch sets **High** (shadows, bloom, mirrored floors, sharper textures) or **Fast** (for phones and small GPUs; the default there). Gallery links such as `#publications` (and the old `#software`) still work.
 
 ### Rendering
 
@@ -84,7 +84,7 @@ The **catalogue** button lists every work as text (the accessible view), and the
 |   |                       # controls, panels, post (bloom pipeline), reflect (mirrored floors),
 |   |                       # visitors, data, main, nav (walkable grid and A*),
 |   |                       # research + research-defs + demos-a/demos-b + demo-kit (demonstrations),
-|   |                       # companions + cat-model (robots and cats), audio (optional sound)
+|   |                       # companions + cat-model (robots and cats), audio (optional music)
 |   |-- museum/             # Generated gallery copies, textures/ (Poly Haven surfaces), people/ (visitors)
 |   |-- images/             # Originals: certificates, covers, news, profile, projects, venues, ...
 |   |-- icons/, logos/      # Skill, social and organisation logos

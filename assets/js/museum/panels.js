@@ -965,7 +965,7 @@ export function controlsHelp() {
         <li><span class="help-ico"><i class="fas fa-hand-pointer" aria-hidden="true"></i></span><span>Click the floor to walk there. Click any work to read about it. Drag the globe in Gallery VIII to spin it.</span></li>
         <li><span class="help-ico"><i class="fas fa-mobile-screen" aria-hidden="true"></i></span><span>On touch screens the joystick walks, a finger drag looks and a tap selects.</span></li>
         <li><span class="help-ico"><i class="fas fa-route" aria-hidden="true"></i></span><span>Walk up to a work and press <kbd>Enter</kbd> to read about it. Demonstrations can be replayed and stepped through from their panel.</span></li>
-        <li><span class="help-ico"><i class="fas fa-keyboard" aria-hidden="true"></i></span><span><kbd>1</kbd>–<kbd>0</kbd> rooms · <kbd>R</kbd> level the view · <kbd>U</kbd> sound · <kbd>M</kbd> map · <kbd>C</kbd> catalogue · <kbd>V</kbd> hologram view · <kbd>N</kbd> <kbd>P</kbd> next and previous work · <kbd>Esc</kbd> close</span></li>
+        <li><span class="help-ico"><i class="fas fa-keyboard" aria-hidden="true"></i></span><span><kbd>1</kbd>–<kbd>0</kbd> rooms · <kbd>R</kbd> level the view · <kbd>U</kbd> music · <kbd>M</kbd> map · <kbd>C</kbd> catalogue · <kbd>V</kbd> hologram view · <kbd>N</kbd> <kbd>P</kbd> next and previous work · <kbd>Esc</kbd> close</span></li>
     </ul>`;
 }
 

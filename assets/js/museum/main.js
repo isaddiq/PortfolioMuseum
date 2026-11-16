@@ -455,8 +455,8 @@ async function main() {
         const on = audio.enabled;
         const btn = $('btn-sound');
         btn.setAttribute('aria-pressed', String(on));
-        btn.setAttribute('aria-label', on ? 'Mute sound' : 'Turn sound on');
-        btn.dataset.tip = on ? 'Mute (U)' : 'Sound on (U)';
+        btn.setAttribute('aria-label', on ? 'Stop the music' : 'Play relaxing music');
+        btn.dataset.tip = on ? 'Music off (U)' : 'Music on (U)';
         btn.querySelector('i').className = on ? 'fas fa-volume-high' : 'fas fa-volume-xmark';
     }
     /** Level the view; if somehow outside the building, go back to the lobby. */
@@ -570,7 +570,6 @@ async function main() {
 
     // Sound (muted until the visitor turns it on).
     audio = new MuseumAudio();
-    controls.onStep = (pace) => audio.footstep(pace, state.room);
     updateSoundButton();
 
     // The research demonstrations report stage changes to an open panel.
