@@ -340,7 +340,9 @@ class CleaningRobot {
                         w.setPath([{ x: w.x, z: w.z }, { x: this.park.x, z: this.park.z }]);
                         this.state = 'dock';
                     } else {
-                        this.spiral = { cx: w.x, cz: w.z, a: 0, r: 0.05, yaw0: w.yaw };
+                        // Start the spiral exactly where the robot is, heading the way it faces.
+                        const a0 = w.yaw - Math.PI / 2;
+                        this.spiral = { cx: w.x - Math.sin(a0) * 0.05, cz: w.z - Math.cos(a0) * 0.05, a: a0, a0, r: 0.05 };
                         this.state = 'spot';
                     }
                 }
@@ -351,7 +353,7 @@ class CleaningRobot {
                 // A slow outward spiral over the spot.
                 const s = this.spiral;
                 s.a += dt * 1.2;
-                s.r = 0.05 + s.a * 0.045;
+                s.r = 0.05 + (s.a - s.a0) * 0.045;
                 const nx = s.cx + Math.sin(s.a) * s.r;
                 const nz = s.cz + Math.cos(s.a) * s.r;
                 if (this.owner.nav.walkable(nx, nz) && !this.obstacleAhead(px, pz)) {
@@ -360,7 +362,7 @@ class CleaningRobot {
                     w.z = nz;
                     w.v = 0.12;
                 }
-                if (s.a > TAU * 2.2 || !this.owner.nav.walkable(nx, nz)) { w.v = 0; this.state = 'pick'; }
+                if (s.a - s.a0 > TAU * 2.2 || !this.owner.nav.walkable(nx, nz)) { w.v = 0; this.state = 'pick'; }
                 break;
             }
             case 'dock': {
@@ -385,11 +387,16 @@ class CleaningRobot {
         if (path) { this.walker.setPath(nav.smooth(path, 0.5)); this.state = 'home'; } else this.state = 'pick';
     }
 
+    /** Put the body where the simulation is. */
+    place() {
+        this.body.root.position.set(this.walker.x, 0, this.walker.z);
+        this.body.root.rotation.y = this.walker.yaw;
+    }
+
     pose(dt) {
         const b = this.body;
         const w = this.walker;
-        b.root.position.set(w.x, 0, w.z);
-        b.root.rotation.y = w.yaw;
+        this.place();
         const cleaning = this.state === 'travel' || this.state === 'spot' || this.state === 'home';
         this.spin += dt * (cleaning ? 14 : 0);
         b.brushes.forEach((br, k) => { br.rotation.y = (k ? -1 : 1) * this.spin; });
@@ -418,7 +425,13 @@ class Cat {
         this.walker = new Walker(spec.x, spec.z, rand(-Math.PI, Math.PI));
         this.state = 'idle';
         this.timer = rand(1, 4);
-        this.weights = { stand: 1, walk: 0, sit: 0, loaf: 0, crouch: 0, leap: 0 };
+        this.weights = { stand: 1, walk: 0, sit: 0, groom: 0, loaf: 0, crouch: 0, leap: 0 };
+        this.groomLeft = 0;
+        this.earTwitch = [0, 0];
+        this.earTimer = rand(2, 6);
+        this.flick = 0;
+        this.flickTimer = rand(4, 10);
+        this.dist = Infinity;
         this.want = 'stand';
         this.phase = rand(0, TAU);
         this.blink = rand(2, 5);
@@ -503,6 +516,8 @@ class Cat {
     update(dt, px, pz) {
         const w = this.walker;
         this.timer -= dt;
+        this.dist = Math.hypot(px - w.x, pz - w.z);
+        this.maybeGroom(dt);
         switch (this.state) {
             case 'idle':
                 w.step(dt, { speed: 0 });
@@ -632,6 +647,23 @@ class Cat {
         }
     }
 
+    /** Put the body where the simulation is. */
+    place() {
+        this.root.position.set(this.walker.x, this.lift, this.walker.z);
+        this.root.rotation.y = this.walker.yaw;
+    }
+
+    /** A sitting cat now and then washes: a forepaw raised to the mouth for a few seconds. */
+    maybeGroom(dt) {
+        if (this.want === 'groom') {
+            this.groomLeft -= dt;
+            if (this.groomLeft <= 0) this.want = 'sit';
+        } else if (this.want === 'sit' && this.state !== 'jump' && Math.random() < dt * 0.07) {
+            this.want = 'groom';
+            this.groomLeft = rand(3, 6.5);
+        }
+    }
+
     pose(dt, t) {
         const w = this.walker;
         // Blend towards the wanted pose (quickly for a jump, gently otherwise).
@@ -643,8 +675,24 @@ class Cat {
             neck: blend((q) => q.neck), head: blend((q) => q.head),
             front: [0, 1, 2].map((i) => blend((q) => q.front[i])),
             hind: [0, 1, 2].map((i) => blend((q) => q.hind[i])),
-            tailLift: blend((q) => q.tailLift), tailCurl: blend((q) => q.tailCurl)
+            tailLift: blend((q) => q.tailLift), tailCurl: blend((q) => q.tailCurl),
+            raise: blend((q) => q.raise), lick: blend((q) => q.lick)
         };
+        // Ear twitches and tail-tip flicks, each now and then, quick and brief.
+        this.earTimer -= dt;
+        if (this.earTimer <= 0) {
+            this.earTimer = rand(2.5, 8);
+            this.earTwitch[Math.random() < 0.5 ? 0 : 1] = 1;
+        }
+        this.earTwitch = this.earTwitch.map((e) => Math.max(0, e - dt * 5));
+        this.flickTimer -= dt;
+        if (this.flickTimer <= 0) {
+            this.flickTimer = rand(3, 9);
+            this.flick = 1;
+        }
+        this.flick = Math.max(0, this.flick - dt * 1.4);
+        // Shell fur only where it can be seen.
+        this.model.setFur(this.dist < 7);
         const speed = Math.abs(w.v);
         const gait = this.weights.walk;
         // The cycle keeps time with the ground covered, so paws do not slide.
@@ -653,9 +701,8 @@ class Cat {
         const L = this.look;
         L.yaw = damp(L.yaw, L.toYaw, 4, dt);
         L.pitch = damp(L.pitch, L.toPitch, 4, dt);
-        this.root.position.set(w.x, this.lift, w.z);
-        this.root.rotation.y = w.yaw;
-        applyCatPose(this.model, p, { gait, phase: this.phase, stride, look: L, t, seed: this.spec.seed });
+        this.place();
+        applyCatPose(this.model, p, { gait, phase: this.phase, stride, look: L, t, seed: this.spec.seed, ears: this.earTwitch.map((e) => Math.sin(e * Math.PI)), flick: this.flick });
         // Blink every few seconds.
         this.blink -= dt;
         const closed = this.blink < 0.12;
@@ -701,16 +748,22 @@ export class Companions {
             this.sphere.radius = r;
             return !frustum || frustum.intersectsSphere(this.sphere);
         };
+        // Bodies always move with the simulation (so nothing is left frozen in
+        // view and then jumps); only the posing of limbs, brushes and lights
+        // is skipped when they cannot be seen.
         for (const r of this.robots) {
             r.update(dt, px, pz);
+            r.place();
             const show = near(r.x, r.z, 0.5);
             r.body.root.visible = Math.hypot(r.x - px, r.z - pz) < 60;
             if (show) { r.pose(dt); seen = seen || r.moving || r.state === 'charge'; }
         }
         for (const c of this.cats) {
             c.update(dt, px, pz);
+            c.place();
             const show = near(c.x, c.z, 0.6);
             if (show) { c.pose(dt, t); seen = true; }
+            else if (Math.hypot(c.x - px, c.z - pz) < 60 && Math.abs(c.walker.v) > 0.01) seen = true;
         }
         return seen;
     }

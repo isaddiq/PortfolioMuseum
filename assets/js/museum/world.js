@@ -579,7 +579,9 @@ export function buildWorld(scene, renderer, surfaces = {}) {
     for (const z of [-1.06, 1.06]) {
         for (const y of [1.3, 3.3]) box(0.03, 1.5, 1.5, doorMat, -52 + SKIN + 0.13, y, z);
     }
-    box(0.2, 4.9, 4.7, bronzeMat, -52 + SKIN + 0.02, 2.45, 0);
+    // The bronze surround sits behind the leaves (its face 3 cm back from
+    // theirs): coplanar faces here made the doors flicker.
+    box(0.17, 4.9, 4.7, bronzeMat, -52 + SKIN + 0.005, 2.45, 0);
     for (const z of [-0.25, 0.25]) box(0.1, 0.9, 0.06, bronzeMat, -52 + SKIN + 0.16, 2.2, z);
 
     // Benches down the hall.

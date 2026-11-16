@@ -38,7 +38,7 @@ The models are built like architectural presentation models at about 1:16: each 
 
 ### Residents
 
-Two **cleaning robots** look after the lobby, Grand Hall and contact room: each leaves its charging dock, plans paths over the walkable grid, spirals over a spot, waits for anyone in its way, and drives home to charge when its battery is low (the dock shows the charge). Two **cats** (a ginger tabby and a tuxedo) wander the building, sit, nap on benches, and now and then hop onto a passing cleaning robot for a ride. The cats are single skinned meshes on a skeleton with fur shading; click a robot or a cat to see what it is doing.
+Two **cleaning robots** look after the lobby, Grand Hall and contact room: each leaves its charging dock, plans paths over the walkable grid, spirals over a spot, waits for anyone in its way, and drives home to charge when its battery is low (the dock shows the charge). Two **cats** (a ginger tabby and a tuxedo) wander the building, sit, nap on benches, and now and then hop onto a passing cleaning robot for a ride. The cats are single skinned meshes on a skeleton, with shell fur (ten layers of strands, combed back, darker at the roots) drawn when you are near, a sculpted head with nose leather, slit-pupil eyes and whiskers, and small signs of life: breathing, ear twitches, tail-tip flicks and the occasional wash of a paw; click a robot or a cat to see what it is doing.
 
 Every work has its caption sign-written on the wall above it, and wall texts, gallery introductions and the big lettering are painted straight onto the plaster: they take the wall's light, shadows and texture, with a little wear in the paint.
 
