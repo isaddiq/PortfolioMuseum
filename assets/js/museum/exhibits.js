@@ -85,6 +85,10 @@ export class Museum {
         this.group = new THREE.Group();
         this.group.name = 'exhibits';
         scene.add(this.group);
+        this.rooms = {};
+        this.buildRoom = null;
+        this.lifted = null;
+        this.lifting = [];
 
         const s = world.surfaces || {};
         this.frameMats = {
@@ -109,20 +113,35 @@ export class Museum {
     }
 
     build() {
-        this.buildLobby();
-        this.buildHall();
-        this.buildEducation();
-        this.buildExperience();
-        this.buildPublications();
-        this.buildProjects();
-        this.buildSkills();
-        this.buildTools();
-        this.buildAwards();
-        this.buildActivities();
-        this.buildContact();
+        // Each room's contents go into a group of their own, so a room that
+        // cannot be seen is not drawn (cull.js).
+        const root = this.group;
+        const into = (id, build) => {
+            const g = new THREE.Group();
+            g.name = `room:${id}`;
+            root.add(g);
+            this.rooms[id] = g;
+            this.group = g;
+            this.buildRoom = id;
+            build();
+            this.group = root;
+            this.buildRoom = null;
+        };
+        into('home', () => this.buildLobby());
+        into('hall', () => this.buildHall());
+        into('education', () => this.buildEducation());
+        into('experience', () => this.buildExperience());
+        into('publications', () => this.buildPublications());
+        into('projects', () => this.buildProjects());
+        into('skills', () => this.buildSkills());
+        into('tools', () => this.buildTools());
+        into('certifications', () => this.buildAwards());
+        into('activities', () => this.buildActivities());
+        into('contact', () => this.buildContact());
         // Research demonstrations: Gallery IV, Gallery VI and the lobby.
         this.research = new Research(this);
         this.research.build();
+        this.research.buildSpot();
         this.buildLamps();
         // Lit meshes cast and receive shadows; unlit art and glows never do.
         const lit = (m) => [].concat(m.material).some((x) => x && !x.isMeshBasicMaterial && !x.isShaderMaterial);
@@ -177,10 +196,39 @@ export class Museum {
         let changed = false;
         for (const a of this.animators) {
             if (a.always?.() || Math.hypot(a.x - x, a.z - z) < a.radius) {
-                if (a.update(t, dt)) changed = true;
+                // Everything nearby keeps time, but only what can be seen asks for a new frame.
+                if (a.update(t, dt) && (!this.sees || a.always?.() || this.sees(a.x, a.z, 3))) changed = true;
             }
         }
+        if (this.research?.updateSpot(x, z, dt)) changed = true;
+        if (this.stepLift(dt)) changed = true;
         return changed;
+    }
+
+    /**
+     * A framed work comes a few centimetres off the wall while the visitor
+     * points at it or stands before it, and settles back afterwards.
+     */
+    setLifted(exhibit) {
+        this.lifted = exhibit?.lift ? exhibit : null;
+        if (this.lifted && !this.lifting.includes(this.lifted)) this.lifting.push(this.lifted);
+    }
+
+    stepLift(dt) {
+        if (!this.lifting.length) return false;
+        let moved = false;
+        for (let i = this.lifting.length - 1; i >= 0; i--) {
+            const x = this.lifting[i];
+            const want = x === this.lifted && !this.calm ? 1 : 0;
+            const before = x.liftK || 0;
+            x.liftK = before + (want - before) * (1 - Math.exp(-dt * 9));
+            if (Math.abs(want - x.liftK) < 0.004) x.liftK = want;
+            if (x.liftK !== before) moved = true;
+            const k = x.liftK * x.liftK * (3 - 2 * x.liftK);
+            for (const mesh of x.lift) mesh.position.z = mesh.userData.restZ + 0.04 * k;
+            if (!want && x.liftK === 0) this.lifting.splice(i, 1);
+        }
+        return moved;
     }
 
     /** Called by main when the visitor walks into a room. */
@@ -233,8 +281,13 @@ export class Museum {
     pump() {
         if (!this.queue.length) return;
         const { x, z } = this.player;
-        this.queue.sort((a, b) => (a.persistent === b.persistent ? 0 : a.persistent ? 1 : -1) ||
-            Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z));
+        // Nearest first. Works that are kept for good but are a long way off
+        // (the banners down the hall) wait until everything nearby is up.
+        const rank = (s) => {
+            const d = Math.hypot(s.x - x, s.z - z);
+            return s.persistent && d > LOAD_RADIUS ? d + 1000 : d;
+        };
+        this.queue.sort((a, b) => rank(a) - rank(b));
         while (this.active < CONCURRENCY && this.queue.length) {
             const slot = this.queue.shift();
             if (!slot.persistent && Math.hypot(slot.x - x, slot.z - z) > UNLOAD_RADIUS) {
@@ -258,7 +311,9 @@ export class Museum {
                 .finally(() => {
                     this.active -= 1;
                     this.requestRender();
-                    this.pump();
+                    // Painting is done on the main thread: let a frame through
+                    // between works, so walking stays smooth while they arrive.
+                    setTimeout(() => this.pump(), 0);
                 });
         }
     }
@@ -296,9 +351,9 @@ export class Museum {
         slot.state = 'empty';
     }
 
-    /** Share of the textures within reach that are on screen (for the loader). */
-    nearbyProgress(x, z) {
-        const near = this.slots.filter((s) => s.persistent || Math.hypot(s.x - x, s.z - z) < LOAD_RADIUS);
+    /** Share of the textures around the visitor that are up (for the loader). */
+    nearbyProgress(x, z, radius = LOAD_RADIUS) {
+        const near = this.slots.filter((s) => Math.hypot(s.x - x, s.z - z) < radius);
         if (!near.length) return 1;
         return near.filter((s) => s.state === 'ready').length / near.length;
     }
@@ -403,6 +458,8 @@ export class Museum {
         geo.setAttribute('uv1', new THREE.BufferAttribute(uv1, 2));
         mesh.receiveShadow = true;
         mesh.userData.noShadow = true;   // a transparent sheet must not cast a box of shadow
+        mesh.layers.set(1);              // lettering is too fine to show in the mirrored floor
+        mesh.userData.decal = true;
         const wp = new THREE.Vector3();
         mesh.getWorldPosition(wp);
         this.addSlot(mat, painter, wp, { persistent, decal: true });
@@ -428,7 +485,7 @@ export class Museum {
             this.lamps.push({
                 hood: group.localToWorld(new THREE.Vector3(0, top + 0.2, 0.27)),
                 arm: group.localToWorld(new THREE.Vector3(0, top + 0.2, 0.135)),
-                rotY: pose.rotY, len: clamp(w * 0.45, 0.35, 1.6)
+                rotY: pose.rotY, len: clamp(w * 0.45, 0.35, 1.6), room: this.buildRoom
             });
         }
         if (exhibit) {
@@ -508,12 +565,16 @@ export class Museum {
             group.updateMatrixWorld(true);
             const hood = group.localToWorld(new THREE.Vector3(0, top + 0.2, 0.27));
             const arm = group.localToWorld(new THREE.Vector3(0, top + 0.2, 0.135));
-            this.lamps.push({ hood, arm, rotY: pose.rotY, len: clamp(spanW * 0.55, 0.35, 1.6) });
+            this.lamps.push({ hood, arm, rotY: pose.rotY, len: clamp(spanW * 0.55, 0.35, 1.6), room: this.buildRoom });
         }
 
         if (exhibit) {
             const focus = { x: world.x, y, z: world.z };
-            this.register(exhibit, meshes, focus, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(spanW, top - bottom), viewDistance).wash = washMat;
+            const record = this.register(exhibit, meshes, focus, new THREE.Vector3(surface.nx, 0, surface.nz), Math.max(spanW, top - bottom), viewDistance);
+            record.wash = washMat;
+            // Frame, mount and picture move together; the lettering stays on the wall.
+            record.lift = meshes.filter((m) => !m.userData.decal);
+            for (const m of record.lift) m.userData.restZ = m.position.z;
         }
         return group;
     }
@@ -535,10 +596,9 @@ export class Museum {
         return mat;
     }
 
-    /** Brass picture lights for every lit work: three instanced draw calls. */
+    /** Brass picture lights for every lit work: three instanced draw calls per room. */
     buildLamps() {
-        const n = this.lamps.length;
-        if (!n) return;
+        if (!this.lamps.length) return;
         const bronze = this.world.materials.bronzeMat;
         const hoodGeo = new THREE.CylinderGeometry(0.04, 0.055, 1, 20);
         hoodGeo.rotateZ(Math.PI / 2);
@@ -549,31 +609,45 @@ export class Museum {
         glowMat.userData.day = glowMat.color.clone();
         glowMat.userData.night = new THREE.Color(3.2, 2.7, 1.9);
         this.world.themed.emissive.push(glowMat);
-        const hoods = new THREE.InstancedMesh(hoodGeo, bronze, n);
-        const arms = new THREE.InstancedMesh(armGeo, bronze, n);
-        const glows = new THREE.InstancedMesh(glowGeo, glowMat, n);
-        const d = new THREE.Object3D();
-        this.lamps.forEach((lamp, i) => {
-            d.rotation.set(0, lamp.rotY, 0);
-            d.position.copy(lamp.hood);
-            d.scale.set(lamp.len, 1, 1);
-            d.updateMatrix();
-            hoods.setMatrixAt(i, d.matrix);
-            d.position.y -= 0.05;
-            d.scale.set(lamp.len * 0.9, 1, 1);
-            d.updateMatrix();
-            glows.setMatrixAt(i, d.matrix);
-            d.position.copy(lamp.arm);
-            d.scale.set(1, 1, 0.27);
-            d.updateMatrix();
-            arms.setMatrixAt(i, d.matrix);
-        });
-        for (const m of [hoods, arms, glows]) {
-            m.userData.noPick = true;
-            m.computeBoundingSphere();
-            this.group.add(m);
+        const byRoom = new Map();
+        for (const lamp of this.lamps) {
+            const id = lamp.room || roomAt(lamp.hood.x, lamp.hood.z)?.id || '';
+            if (!byRoom.has(id)) byRoom.set(id, []);
+            byRoom.get(id).push(lamp);
         }
-        glows.userData.noShadow = true;
+        const d = new THREE.Object3D();
+        for (const [id, lamps] of byRoom) {
+            const n = lamps.length;
+            const hoods = new THREE.InstancedMesh(hoodGeo, bronze, n);
+            const arms = new THREE.InstancedMesh(armGeo, bronze, n);
+            const glows = new THREE.InstancedMesh(glowGeo, glowMat, n);
+            lamps.forEach((lamp, i) => {
+                d.rotation.set(0, lamp.rotY, 0);
+                d.position.copy(lamp.hood);
+                d.scale.set(lamp.len, 1, 1);
+                d.updateMatrix();
+                hoods.setMatrixAt(i, d.matrix);
+                d.position.y -= 0.05;
+                d.scale.set(lamp.len * 0.9, 1, 1);
+                d.updateMatrix();
+                glows.setMatrixAt(i, d.matrix);
+                d.position.copy(lamp.arm);
+                d.scale.set(1, 1, 0.27);
+                d.updateMatrix();
+                arms.setMatrixAt(i, d.matrix);
+            });
+            // One group per room: a single cell for the culling.
+            const set = new THREE.Group();
+            for (const m of [hoods, arms, glows]) {
+                m.userData.noPick = true;
+                m.layers.set(1);
+                m.computeBoundingSphere();
+                m.computeBoundingBox();
+                set.add(m);
+            }
+            glows.userData.noShadow = true;
+            (this.rooms[id] || this.group).add(set);
+        }
     }
 
     /**

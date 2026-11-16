@@ -405,7 +405,8 @@ export class Visitors {
         for (const p of live) this.think(p, dt, px, pz);
         this.separate(live, dt);
         for (const p of live) {
-            const near = Math.hypot(p.x - px, p.z - pz) < ACTIVE_RADIUS;
+            // Near enough, and not behind a wall (the room culling knows).
+            const near = Math.hypot(p.x - px, p.z - pz) < ACTIVE_RADIUS && (!this.sees || this.sees(p.x, p.z, 0.6));
             _sphere.center.set(p.x, 0.9, p.z);
             const onScreen = near && (!frustum || frustum.intersectsSphere(_sphere));
             if (onScreen) {

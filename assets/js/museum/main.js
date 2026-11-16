@@ -18,6 +18,7 @@ import { escapeHtml } from './util.js';
 import { NavGrid, pathLength } from './nav.js';
 import { Companions } from './companions.js';
 import { MuseumAudio } from './audio.js';
+import { createRoomCulling } from './cull.js';
 
 const HOME_TITLE = 'Saddiq Ur Rehman, PhD in Architecture, Kyung Hee University';
 const HASH_ALIASES = { software: 'tools', awards: 'certifications' };
@@ -39,6 +40,7 @@ const $ = (id) => document.getElementById(id);
 
 const state = {
     room: null,
+    ready: false,
     needsRender: true,
     entered: false,
     lastSlotUpdate: 0,
@@ -80,6 +82,8 @@ async function main() {
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 160);
+    // Layer 1 holds fine detail the mirrored floor has no use for (fur, whiskers).
+    camera.layers.enable(1);
     const requestRender = () => { state.needsRender = true; };
 
     setProgress(0.28, 'Laying the floors…');
@@ -91,6 +95,8 @@ async function main() {
     museum.pxPerM = q.imagePxPerM;
     museum.build();
     bakeFloorOcclusion(world);
+    // Rooms that cannot be seen from where the visitor stands are not drawn.
+    const culling = createRoomCulling(museum);
     // Where the visitor (and the museum's residents) can walk.
     const nav = new NavGrid(world.colliders);
     settleViews(museum, nav);
@@ -111,6 +117,8 @@ async function main() {
     const viewProj = new THREE.Matrix4();
     museum.frustum = frustum;
     const residents = new Companions({ scene, world, nav, museum, calm: CALM });
+    residents.sees = culling.sees;
+    museum.sees = culling.sees;
     let audio = null;
 
     // Brackets that close around the work under the pointer.
@@ -129,6 +137,7 @@ async function main() {
     const raycaster = new THREE.Raycaster();
     raycaster.params.Line.threshold = 0.02;
     raycaster.params.Points.threshold = 0;
+    raycaster.layers.enable(1);
     const pointer = new THREE.Vector2();
     const pickTargets = [world.group, museum.group];
     const shown = (obj) => {
@@ -254,12 +263,21 @@ async function main() {
 
     // The brackets follow the pointer; with a panel open they stay on its work.
     let hovered = null;
+    let approachNow = null;
     function setHover(exhibit) {
         hovered = exhibit;
         refreshHighlight();
     }
     function refreshHighlight() {
         if (highlight.show(hovered || (panels?.isOpen ? panels.current : null), shown)) requestRender();
+        refreshLift();
+    }
+    /** The work pointed at (or, failing that, stood before) comes off the wall a little. */
+    function refreshLift() {
+        const next = hovered || (panels?.isOpen ? panels.current : null) || approachNow || null;
+        if (next === museum.lifted || (!next?.lift && !museum.lifted)) return;
+        museum.setLifted(next);
+        requestRender();
     }
 
     // Panels and navigation.
@@ -524,6 +542,9 @@ async function main() {
         renderer.toneMapping = cfg.bloom ? THREE.NoToneMapping : THREE.NeutralToneMapping;
         renderer.shadowMap.enabled = cfg.shadows;
         world.lights.key.castShadow = cfg.shadows;
+        if (museum.research.spot) museum.research.spot.light.castShadow = cfg.shadows;
+        // Shell fur needs multisampling to look soft; Fast mode shows the smooth coat.
+        residents.fur = cfg.bloom;
         const key = world.lights.key;
         if (key.shadow.mapSize.x !== cfg.shadowMap) {
             key.shadow.mapSize.set(cfg.shadowMap, cfg.shadowMap);
@@ -611,6 +632,8 @@ async function main() {
         if (approach.wash) approach.wash.userData.boost = 0;
         approach.wash = best?.wash || null;
         if (approach.wash) approach.wash.userData.boost = 1;
+        approachNow = best;
+        refreshLift();
     }
     approachEl.addEventListener('click', () => { if (approach.current) goToExhibit(approach.current, { open: true }); });
 
@@ -619,7 +642,7 @@ async function main() {
     let last = performance.now();
     function frame(now) {
         requestAnimationFrame(frame);
-        if (document.hidden) { last = now; return; }
+        if (document.hidden || !state.ready) { last = now; return; }
         const dt = Math.min(0.1, (now - last) / 1000);
         last = now;
         const t = now / 1000;
@@ -628,6 +651,7 @@ async function main() {
             state.needsRender = true;
         }
         camera.updateMatrixWorld();
+        if (culling.update(camera.position.x, camera.position.z)) state.needsRender = true;
         viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(viewProj);
         if (museum.animate(t, dt, controls.x, controls.z)) state.needsRender = true;
@@ -674,15 +698,34 @@ async function main() {
         return moving;
     }
 
+    // Shaders: handed to the driver now, all of them, to compile in parallel
+    // while the last works are hung. Left to the first frame, they compile one
+    // after another on the main thread and the page stalls for seconds.
+    // They are compiled for the buffer the scene is really drawn into.
+    const compileAll = () => {
+        culling.showAll();
+        renderer.setRenderTarget(pipeline ? pipeline.composer.readBuffer : null);
+        const done = renderer.compileAsync(scene, camera).catch(() => null);
+        renderer.setRenderTarget(null);
+        return done;
+    };
+    const shaders = compileAll();
+    // The cats are sculpted meanwhile, then their own shaders follow.
+    residents.addCats();
+    await Promise.race([shaders.then(compileAll), wait(9000)]);
+    state.ready = true;
+
     // Wait for the textures around the starting point (not every texture in
     // the building), then walk straight in.
     await new Promise((resolve) => {
         const started = performance.now();
         const tick = () => {
-            const p = museum.nearbyProgress(controls.x, controls.z);
+            // The room one arrives in, not the whole building: the rest is
+            // hung while walking in.
+            const p = museum.nearbyProgress(controls.x, controls.z, 20);
             setProgress(0.6 + p * 0.4, 'Hanging the artworks…');
-            if (p >= 0.9 || performance.now() - started > 5000) resolve();
-            else setTimeout(tick, 100);
+            if (p >= 0.92 || performance.now() - started > 4000) resolve();
+            else setTimeout(tick, 60);
         };
         tick();
     });
@@ -694,6 +737,7 @@ async function main() {
     if (arrival) controls.glideTo({ ...startRoom.spawn, pitch: 0 }, 3.6);
     // Visitors load after the first frames are on screen, and join one by one.
     const people = new Visitors({ scene, museum, world, nav, count: QUALITY[state.quality].visitors });
+    people.sees = culling.sees;
     visitors = people;
     setTimeout(() => people.load().catch((error) => console.warn('Visitors could not load', error)), 800);
 
@@ -714,7 +758,7 @@ async function main() {
     }
 
     // Debug/automation handle.
-    window.__museum = { controls, museum, world, nav, residents, get audio() { return audio; }, goToRoom, goToExhibit, walkTo, panels, scene, camera, renderer, requestRender, setQuality, get visitors() { return visitors; } };
+    window.__museum = { controls, museum, world, nav, residents, culling, get audio() { return audio; }, goToRoom, goToExhibit, walkTo, panels, scene, camera, renderer, requestRender, setQuality, get visitors() { return visitors; } };
 }
 
 // ---------------------------------------------------------------------------

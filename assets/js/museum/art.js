@@ -54,7 +54,10 @@ export function loadImage(src) {
         const img = new Image();
         if (/^https?:/.test(src)) img.crossOrigin = 'anonymous';
         img.decoding = 'async';
-        img.onload = () => resolve(img);
+        // Decoded off the main thread before anything draws it: drawing an
+        // undecoded image to a canvas decodes it there and then, and a
+        // gallery of large pictures would stall the walk.
+        img.onload = () => (img.decode ? img.decode().then(() => resolve(img), () => resolve(img)) : resolve(img));
         img.onerror = () => resolve(null);
         img.src = src;
     });
@@ -66,7 +69,8 @@ export function loadImage(src) {
 export async function loadFirstImage(sources) {
     for (const src of sources.filter(Boolean)) {
         const img = await loadImage(src);
-        if (img && isCanvasSafe(img)) return img;
+        // Only an image from another site can taint a canvas.
+        if (img && (!/^https?:/.test(src) || isCanvasSafe(img))) return img;
     }
     return null;
 }

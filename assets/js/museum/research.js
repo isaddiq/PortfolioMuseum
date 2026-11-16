@@ -27,6 +27,8 @@ const LABEL_TILT = 0.42;           // radians up from horizontal, towards the vi
 const MODEL_SCALE = 1.18;
 const BOARD = 0.014;               // base board under each model          // models on the plinths are a little larger than built
 const ACTIVE_RADIUS = 14;
+const VIEW_DISTANCE = 2.1;         // where one stands to watch a model
+const SPOT_REACH = 9;              // the spot comes up within this distance of a model
 
 /** Shared materials for every model, made once. */
 function makeMaterials(museum) {
@@ -91,7 +93,7 @@ class Installation {
         const group = new THREE.Group();
         group.position.set(place.x, 0, place.z);
         group.rotation.y = place.rotY;
-        this.museum.group.add(group);
+        (this.museum.rooms[place.room] || this.museum.group).add(group);
         this.group = group;
 
         const meshes = place.round ? this.roundBase(group, place) : this.rectBase(group);
@@ -131,9 +133,15 @@ class Installation {
         this.exhibit = this.museum.register({
             id: `demo-${def.key}`, room: place.room, kind: 'demo', title: def.title,
             subtitle: `Research demonstration · ${def.short}`, payload: this, icon: def.icon
-        }, [...meshes, proxy, this.root], { x: this.centre.x, y: this.centre.y, z: this.centre.z }, normal, 1.6, place.viewDistance ?? 2.3);
+        }, [...meshes, proxy, this.root], { x: this.centre.x, y: this.centre.y, z: this.centre.z }, normal, 1.6, place.viewDistance ?? VIEW_DISTANCE);
         // Look down into the model from just over the label, as one leans over a plinth.
-        this.exhibit.view.pitch = clamp(Math.atan2(this.centre.y - 1.65, place.viewDistance ?? 2.3) - 0.07, -0.5, 0.05);
+        this.exhibit.view.pitch = clamp(Math.atan2(this.centre.y - 1.65, place.viewDistance ?? VIEW_DISTANCE) - 0.07, -0.5, 0.05);
+        // Where the gallery spot stands for this model: above, in front and to one side.
+        const c = Math.cos(place.rotY);
+        const s = Math.sin(place.rotY);
+        const reach = place.round ? 1.5 : 1;
+        this.spotFrom = new THREE.Vector3(this.centre.x + (s * 1.25 + c * 0.8) * reach, this.centre.y + 2.2 * reach, this.centre.z + (c * 1.25 - s * 0.8) * reach);
+        this.spotAngle = Math.atan2(this.sphere.radius + 0.15, this.spotFrom.distanceTo(this.centre));
 
         this.museum.animators.push({
             x: this.centre.x, z: this.centre.z, radius: ACTIVE_RADIUS,
@@ -296,10 +304,16 @@ class Installation {
             if (this.labelSlot.state === 'ready') this.museum.repaint(this.labelSlot);
             this.research.changed(this);
         }
-        const visible = !this.museum.frustum || this.museum.frustum.intersectsSphere(this.sphere);
+        const visible = this.shown() && (!this.museum.frustum || this.museum.frustum.intersectsSphere(this.sphere));
         if (!visible || (!this.playing && !this.dirty)) return false;
         this.dirty = false;
         this.model.render(this.t, this.playing ? dt : 0);
+        return true;
+    }
+
+    /** False while the room culling has put this installation away. */
+    shown() {
+        for (let o = this.group.parent; o; o = o.parent) if (!o.visible) return false;
         return true;
     }
 
@@ -359,6 +373,54 @@ export class Research {
 
     changed(inst) {
         this.onChange?.(inst);
+    }
+
+    /**
+     * One gallery spot for all the models: it lights whichever the visitor is
+     * nearest, and casts their only crisp shadows (the skylight's shadow map
+     * covers a whole room, far too coarse for a 1:16 model). It fades down
+     * before it moves to another model, and costs nothing while it is dark.
+     */
+    buildSpot() {
+        const light = new THREE.SpotLight('#fff0d8', 0, 0, 0.42, 0.8, 0);
+        light.castShadow = true;
+        light.shadow.mapSize.set(1024, 1024);
+        light.shadow.camera.near = 0.8;
+        light.shadow.camera.far = 7;
+        light.shadow.bias = -0.0004;
+        light.shadow.normalBias = 0.003;
+        light.shadow.autoUpdate = false;
+        this.museum.scene.add(light, light.target);
+        this.spot = { light, on: null, level: 0 };
+    }
+
+    /** Move and fade the spot. True while its light is changing. */
+    updateSpot(x, z, dt) {
+        const s = this.spot;
+        if (!s) return false;
+        let best = null;
+        let bestD = SPOT_REACH;
+        for (const inst of this.list) {
+            const d = Math.hypot(inst.centre.x - x, inst.centre.z - z);
+            if (d < bestD && inst.shown()) { best = inst; bestD = d; }
+        }
+        if (s.level < 0.01 && best !== s.on) {
+            s.on = best;
+            if (best) {
+                s.light.position.copy(best.spotFrom);
+                s.light.target.position.copy(best.centre);
+                s.light.target.updateMatrixWorld();
+                s.light.angle = best.spotAngle;
+            }
+        }
+        const want = best && best === s.on ? clamp((SPOT_REACH - bestD) / 3.5, 0, 1) : 0;
+        const before = s.level;
+        s.level += clamp(want - s.level, -dt * 2.2, dt * 2.2);
+        const night = document.documentElement.dataset.theme === 'dark';
+        s.light.intensity = s.level * s.level * (3 - 2 * s.level) * (night ? 1.7 : 0.85);
+        // No shadow map is drawn while the light is out.
+        s.light.shadow.autoUpdate = s.level > 0.01;
+        return before !== s.level;
     }
 
     /** The installation nearest the visitor that is making a sound, for audio. */

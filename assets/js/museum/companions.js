@@ -20,7 +20,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { roomAt } from './world.js';
 import { clamp } from './util.js';
-import { buildCatModel, applyCatPose, CAT_POSES } from './cat-model.js';
+import { buildCatModel, applyCatPose, blendCatPoses } from './cat-model.js';
 
 const TAU = Math.PI * 2;
 const wrap = (a) => ((a + Math.PI) % TAU + TAU) % TAU - Math.PI;
@@ -433,8 +433,10 @@ class Cat {
         this.flickTimer = rand(4, 10);
         this.dist = Infinity;
         this.want = 'stand';
-        this.phase = rand(0, TAU);
+        this.phase = rand(0, 1);
         this.blink = rand(2, 5);
+        this.lids = 0;
+        this.posed = {};
         this.look = { yaw: 0, pitch: 0, toYaw: 0, toPitch: 0, timer: 0 };
         this.lift = 0;              // height of the surface it stands on
         this.jump = null;
@@ -452,7 +454,6 @@ class Cat {
         const model = buildCatModel(spec);
         this.model = model;
         this.root = model.root;
-        this.eyes = model.eyes;
         this.owner.group.add(this.root);
     }
 
@@ -667,17 +668,8 @@ class Cat {
     pose(dt, t) {
         const w = this.walker;
         // Blend towards the wanted pose (quickly for a jump, gently otherwise).
-        for (const k of Object.keys(this.weights)) this.weights[k] = damp(this.weights[k], k === this.want ? 1 : 0, this.want === 'leap' || this.want === 'crouch' ? 14 : 5, dt);
-        const total = Object.values(this.weights).reduce((a, b) => a + b, 0) || 1;
-        const blend = (get) => Object.entries(this.weights).reduce((sum, [k, wt]) => sum + get(CAT_POSES[k]) * wt, 0) / total;
-        const p = {
-            drop: blend((q) => q.drop), pitch: blend((q) => q.pitch), spine: blend((q) => q.spine),
-            neck: blend((q) => q.neck), head: blend((q) => q.head),
-            front: [0, 1, 2].map((i) => blend((q) => q.front[i])),
-            hind: [0, 1, 2].map((i) => blend((q) => q.hind[i])),
-            tailLift: blend((q) => q.tailLift), tailCurl: blend((q) => q.tailCurl),
-            raise: blend((q) => q.raise), lick: blend((q) => q.lick)
-        };
+        for (const k of Object.keys(this.weights)) this.weights[k] = damp(this.weights[k], k === this.want ? 1 : 0, this.want === 'leap' || this.want === 'crouch' ? 14 : 4.2, dt);
+        const p = blendCatPoses(this.weights, this.posed);
         // Ear twitches and tail-tip flicks, each now and then, quick and brief.
         this.earTimer -= dt;
         if (this.earTimer <= 0) {
@@ -691,23 +683,26 @@ class Cat {
             this.flick = 1;
         }
         this.flick = Math.max(0, this.flick - dt * 1.4);
-        // Shell fur only where it can be seen.
-        this.model.setFur(this.dist < 7);
+        // Shell fur only where it can be seen: the full coat close up, half of it
+        // further off; beyond that a lighter copy of the body.
+        this.model.setFur(this.owner.fur !== false && this.dist < 7, this.dist < 3.2 ? 8 : 4);
+        this.model.setDetail(this.dist < 5);
         const speed = Math.abs(w.v);
-        const gait = this.weights.walk;
-        // The cycle keeps time with the ground covered, so paws do not slide.
-        this.phase += dt * TAU * (speed / 0.34) * (speed > 0.02 ? 1 : 0);
-        const stride = 0.42 * clamp(speed / 0.45, 0, 1.3) * gait;
+        // Walking only as far as it is really moving, so a cat that has stopped stands still.
+        const gait = this.weights.walk * clamp(speed / 0.12, 0, 1);
+        // The stride lengthens with pace, and the cycle keeps time with the
+        // ground covered, so planted paws do not slide.
+        const stride = 0.25 + 0.13 * clamp(speed, 0, 1);
+        this.phase += dt * (speed / stride) * (speed > 0.02 ? 1 : 0);
         const L = this.look;
         L.yaw = damp(L.yaw, L.toYaw, 4, dt);
         L.pitch = damp(L.pitch, L.toPitch, 4, dt);
         this.place();
-        applyCatPose(this.model, p, { gait, phase: this.phase, stride, look: L, t, seed: this.spec.seed, ears: this.earTwitch.map((e) => Math.sin(e * Math.PI)), flick: this.flick });
-        // Blink every few seconds.
+        // Blink every few seconds: shut fast, open a little slower.
         this.blink -= dt;
-        const closed = this.blink < 0.12;
         if (this.blink < 0) this.blink = rand(2.5, 6);
-        this.eyes.forEach((e) => { e.scale.y = closed ? 0.12 : damp(e.scale.y, 1, 20, dt); });
+        this.lids = this.blink < 0.11 ? Math.min(1, this.lids + dt * 22) : damp(this.lids, 0, 16, dt);
+        applyCatPose(this.model, p, { gait, phase: this.phase, stride, look: L, t, seed: this.spec.seed, ears: this.earTwitch.map((e) => Math.sin(e * Math.PI)), flick: this.flick, blink: this.lids });
     }
 }
 
@@ -728,13 +723,22 @@ export class Companions {
             new CleaningRobot(this, { name: 'Cleaning robot A', dock: { x: -51.74, z: -4.2, yaw: Math.PI / 2 }, region: [-50, -14, 14, 14], battery: 0.85 }),
             new CleaningRobot(this, { name: 'Cleaning robot B', dock: { x: 55.5, z: -9.74, yaw: 0 }, region: [14, -7, 66, 9], battery: 0.6, docked: true })
         ];
-        this.cats.push(new Cat(this, { name: 'Ginger', seed: 1.3, x: -40, z: 9, tabby: true, base: '#c27a35', dark: '#7d3f14', light: '#ecd2a6', sheen: '#f3c891', muzzle: '#e2c29a', eyes: '#d49a2a', nose: '#c07d72', innerEar: '#d1a093' }));
-        this.cats.push(new Cat(this, { name: 'Pepper', seed: 4.1, x: 4, z: 3, tabby: false, base: '#232226', dark: '#151418', light: '#eeece6', sheen: '#9a9aa3', muzzle: '#f0eee8', whitePaws: true, eyes: '#93b83c', nose: '#3a2d2e', innerEar: '#9c7f7e' }));
+        this.sphere = new THREE.Sphere();
+        this.robots.forEach((r) => r.pose(0));
+    }
+
+    /**
+     * The cats arrive a moment after the building: sculpting them takes a
+     * few hundred milliseconds, spent while the shaders compile.
+     */
+    addCats() {
+        if (this.cats.length) return;
+        const museum = this.museum;
+        this.cats.push(new Cat(this, { name: 'Ginger', seed: 1.3, x: -40, z: 9, tabby: true, base: '#c98742', dark: '#8f4f1d', light: '#efd9b6', white: '#f5eee2', liner: '#4a2a14', sheen: '#f3c891', eyes: '#c9a23a', nose: '#c48478', innerEar: '#d9a89c' }));
+        this.cats.push(new Cat(this, { name: 'Pepper', seed: 4.1, x: 4, z: 3, tabby: false, base: '#252428', dark: '#141317', light: '#eeece6', white: '#f3f1ec', liner: '#0d0c0e', sheen: '#8f8f9a', eyes: '#9dbb45', nose: '#3a2d2e', innerEar: '#b08f8c' }));
         // Clicking one opens a small card about it.
         this.robots.forEach((r, i) => museum.register({ id: `resident-robot-${i}`, room: roomAt(r.dockPose.x, r.dockPose.z)?.id || 'hall', kind: 'resident', title: r.name, subtitle: 'Autonomous floor care', payload: { robot: r, describe: () => this.describe({ robot: r }) }, icon: 'fas fa-robot', catalogue: false, noHighlight: true }, [r.body.root, r.dockObj.dock]));
         this.cats.forEach((c, i) => museum.register({ id: `resident-cat-${i}`, room: 'home', kind: 'resident', title: `${c.name}, a museum cat`, subtitle: 'Lives here', payload: { cat: c, describe: () => this.describe({ cat: c }) }, icon: 'fas fa-cat', catalogue: false, noHighlight: true }, [c.root]));
-        this.sphere = new THREE.Sphere();
-        this.robots.forEach((r) => r.pose(0));
         this.cats.forEach((c) => c.pose(0, 0));
     }
 
@@ -744,6 +748,8 @@ export class Companions {
         let seen = false;
         const near = (x, z, r) => {
             if (Math.hypot(x - px, z - pz) > DRAW_RADIUS) return false;
+            // Behind a wall: the room culling knows.
+            if (this.sees && !this.sees(x, z, r)) return false;
             this.sphere.center.set(x, 0.2, z);
             this.sphere.radius = r;
             return !frustum || frustum.intersectsSphere(this.sphere);
@@ -755,15 +761,16 @@ export class Companions {
             r.update(dt, px, pz);
             r.place();
             const show = near(r.x, r.z, 0.5);
-            r.body.root.visible = Math.hypot(r.x - px, r.z - pz) < 60;
+            r.body.root.visible = Math.hypot(r.x - px, r.z - pz) < 60 && (!this.sees || this.sees(r.x, r.z, 0.5));
             if (show) { r.pose(dt); seen = seen || r.moving || r.state === 'charge'; }
         }
         for (const c of this.cats) {
             c.update(dt, px, pz);
             c.place();
             const show = near(c.x, c.z, 0.6);
+            c.root.visible = show || (Math.hypot(c.x - px, c.z - pz) < 60 && (!this.sees || this.sees(c.x, c.z, 0.6)));
             if (show) { c.pose(dt, t); seen = true; }
-            else if (Math.hypot(c.x - px, c.z - pz) < 60 && Math.abs(c.walker.v) > 0.01) seen = true;
+            else if (c.root.visible && Math.abs(c.walker.v) > 0.01) seen = true;
         }
         return seen;
     }
