@@ -1,19 +1,19 @@
 {
-  "citations": 146,
+  "citations": 150,
   "hIndex": 6,
   "i10Index": 5,
   "scholarId": "wMH9sSgAAAAJ",
   "profileUrl": "https://scholar.google.com/citations?user=wMH9sSgAAAAJ&hl=en",
-  "updated": "2026-11-07",
+  "updated": "2026-11-16",
   "papers": [
     {
       "title": "Advancing BIM and game engine integration in the AEC industry: Innovations, challenges, and future directions",
-      "citations": 48,
+      "citations": 49,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=6336344139067388383"
     },
     {
       "title": "Data-driven integration framework for four-dimensional building information modeling simulation in modular construction: A case study approach",
-      "citations": 28,
+      "citations": 29,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=10613640687524639937"
     },
     {
@@ -28,7 +28,7 @@
     },
     {
       "title": "Semantic-enriched framework for asynchronous bidirectional BIM data exchange with immersive visualization platform",
-      "citations": 10,
+      "citations": 11,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=16989541369909133627"
     },
     {
@@ -60,6 +60,11 @@
       "title": "BIM-based visualization of downstream activities in DfMA-oriented modern methods of construction",
       "citations": 1,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=14945949526660079034"
+    },
+    {
+      "title": "Cross-platform framework for semantic BIM-to-XR data exchange in immersive construction informatics",
+      "citations": 1,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=12353156803235246799"
     },
     {
       "title": "INTEGRATION OF 4D BIM AND VR FOR INTERACTIVE MODULAR BUILDING MANUFACTURING SIMULATIONS IN A FACTORY-CONTROLLED ENVIRONMENT",
