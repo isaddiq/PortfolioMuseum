@@ -1,5 +1,5 @@
 // Walkable grid for movement: click-to-move, walks to exhibits, and the
-// museum's robots and cats all follow a planned path instead of a
+// museum's robots all follow a planned path instead of a
 // straight line, so the camera never slides through a bench, a plinth or a
 // wall and then snaps out of it.
 //

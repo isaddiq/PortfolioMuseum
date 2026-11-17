@@ -82,7 +82,7 @@ async function main() {
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 160);
-    // Layer 1 holds fine detail the mirrored floor has no use for (fur, whiskers).
+    // Layer 1 holds fine detail the mirrored floor has no use for (lettering, picture lights).
     camera.layers.enable(1);
     const requestRender = () => { state.needsRender = true; };
 
@@ -181,6 +181,32 @@ async function main() {
         return controls.followPath(smooth, { yaw, pitch, lookAlong: lookAlong || turns });
     }
 
+    // While a demonstration's panel is open and the visitor stands still, the
+    // view drifts slowly from side to side around the model, so it is seen in
+    // the round. Any movement of the visitor's own ends it.
+    const showcase = { exhibit: null, t: 0, held: false };
+    function stepShowcase(dt) {
+        const x = panels.isOpen && panels.current?.kind === 'demo' ? panels.current : null;
+        if (x !== showcase.exhibit) Object.assign(showcase, { exhibit: x, t: 0, held: false });
+        if (!x || CALM || showcase.held || controls.glide || controls.pointer || !x.view || !x.focus) return false;
+        const v = framedView(x);
+        const f = x.focus;
+        const R = Math.hypot(v.x - f.x, v.z - f.z);
+        // Only once the visitor has arrived in front of the model.
+        if (!showcase.t && (Math.hypot(controls.x - v.x, controls.z - v.z) > 0.25 || Math.abs(Math.sin((controls.yaw - v.yaw) / 2)) > 0.05)) return false;
+        showcase.t += dt;
+        const swing = 0.3 * Math.min(1, showcase.t / 3) * Math.sin(showcase.t * 0.36);
+        const px = f.x + Math.sin(v.yaw + swing) * R;
+        const pz = f.z + Math.cos(v.yaw + swing) * R;
+        if (!nav.walkable(px, pz)) return false;
+        controls.x = px;
+        controls.z = pz;
+        controls.yaw = v.yaw + swing;
+        controls.pitch = v.pitch;
+        controls.apply();
+        return true;
+    }
+
     const controls = new Controls(camera, canvas, world.colliders, {
         calm: CALM,
         onClick: (x, y) => {
@@ -204,7 +230,7 @@ async function main() {
             }
         },
         onHover: (x, y) => queueHover(x, y),
-        onUserMove: () => hideHelpSoon(),
+        onUserMove: () => { showcase.held = true; hideHelpSoon(); },
         onGrab: (x, y) => {
             if (museum.collab?.mode !== 'map') return null;
             return pick(x, y)?.exhibit?.id === 'collab-map' ? museum.grabGlobe() : null;
@@ -543,8 +569,6 @@ async function main() {
         renderer.shadowMap.enabled = cfg.shadows;
         world.lights.key.castShadow = cfg.shadows;
         if (museum.research.spot) museum.research.spot.light.castShadow = cfg.shadows;
-        // Shell fur needs multisampling to look soft; Fast mode shows the smooth coat.
-        residents.fur = cfg.bloom;
         const key = world.lights.key;
         if (key.shadow.mapSize.x !== cfg.shadowMap) {
             key.shadow.mapSize.set(cfg.shadowMap, cfg.shadowMap);
@@ -646,7 +670,7 @@ async function main() {
         const dt = Math.min(0.1, (now - last) / 1000);
         last = now;
         const t = now / 1000;
-        if (controls.update(dt)) {
+        if (controls.update(dt) || stepShowcase(dt)) {
             onPlayerMoved(false);
             state.needsRender = true;
         }
@@ -709,10 +733,7 @@ async function main() {
         renderer.setRenderTarget(null);
         return done;
     };
-    const shaders = compileAll();
-    // The cats are sculpted meanwhile, then their own shaders follow.
-    residents.addCats();
-    await Promise.race([shaders.then(compileAll), wait(9000)]);
+    await Promise.race([compileAll(), wait(9000)]);
     state.ready = true;
 
     // Wait for the textures around the starting point (not every texture in

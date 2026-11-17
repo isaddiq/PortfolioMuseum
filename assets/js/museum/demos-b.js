@@ -1,6 +1,6 @@
 // Builders for the research demonstrations (part two): AI queries over a
 // building model, the digital twin, IFC-to-engine interoperability, robot
-// navigation with live replanning, and the lobby's centrepiece.
+// navigation with live replanning. The lobby's centrepiece is in demos-c.js.
 //
 // Same contract as demos-a.js: build({ root, mats, accent, inst }) returns
 // { render(t, dt), hum?(), reset?() } in plinth-top coordinates.
@@ -12,7 +12,6 @@ import {
     lin, sstep, easeOut, minJerk, mix, turn, setInst, boxes, flush, part, WHITE,
     liveCanvas, cardSign, roundRect, accentGlow, boxEdges, bezier, figures, trees, softBox, groundShadow
 } from './demo-kit.js';
-import { surfaceMaterial as surf, surfaceVariant } from './surfaces.js';
 
 const _c = new THREE.Color();
 const _v = new THREE.Vector3();
@@ -892,142 +891,5 @@ export function buildNav({ root, mats, accent, inst }) {
         },
         reset() { reset(); shownRoute = shownOld = null; },
         hum: () => hum
-    };
-}
-
-// ---------------------------------------------------------------------------
-// The lobby centrepiece: one model, robotics, XR and a digital twin
-// ---------------------------------------------------------------------------
-
-export function buildEcosystem({ root, mats, accent, inst }) {
-    const accentHex = `#${accent.getHexString()}`;
-    const FLOORS = 6;
-    const FH = 0.1;
-    const SIDE = 0.4;
-    const DAIS = -0.7;           // the dais top, relative to the drum top
-    const solidPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const holoPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
-    const clip = (m) => surfaceVariant(m, { clippingPlanes: [solidPlane], clipShadows: true });
-    const slabs = boxes(FLOORS + 1, clip(mats.concrete), root);
-    const facade = surf('facade', { scale: [10, 1 / FH, 10], offset: [SIDE / 2, -0.012, SIDE / 2], roughness: 0.22, metalness: 0.05, bump: 0.3, envMapIntensity: 1.4, clippingPlanes: [solidPlane], clipShadows: true });
-    const bands = boxes(FLOORS, facade, root);
-    // The plaza on the drum: paving, trees and people.
-    const plaza = part(new THREE.CircleGeometry(0.6, 64), mats.tiles, root, 0, 0.002, 0);
-    plaza.rotation.x = -Math.PI / 2;
-    trees(root, [[0.42, 0.25, 1.1], [-0.4, 0.3, 1], [-0.38, -0.32, 1.15], [0.36, -0.36, 0.95]], mats);
-    figures(root, [[0.28, 0.32, 2.6], [0.33, 0.3, -2.9], [-0.3, -0.1, 1.2], [0.05, 0.4, 3.1]], mats.figure);
-    groundShadow(root, 0, 0, SIDE + 0.04, SIDE + 0.04, 0.45, 0.003);
-    for (let i = 0; i <= FLOORS; i++) setInst(slabs, i, 0, i * FH + 0.006, 0, SIDE + 0.04, 0.012, SIDE + 0.04);
-    for (let i = 0; i < FLOORS; i++) setInst(bands, i, 0, i * FH + 0.012 + (FH - 0.012) / 2, 0, SIDE, FH - 0.012, SIDE);
-    flush(slabs, bands);
-    const colMat = clip(mats.steel);
-    for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) part(new THREE.BoxGeometry(0.018, FLOORS * FH, 0.018), colMat, root, (x * SIDE) / 2, (FLOORS * FH) / 2, (z * SIDE) / 2);
-    part(new THREE.BoxGeometry(0.2, 0.05, 0.2), clip(mats.white), root, 0.04, FLOORS * FH + 0.037, -0.04);
-    const holoMat = mats.holoLine.clone();
-    holoMat.clippingPlanes = [holoPlane];
-    const holoBoxes = [[SIDE, FLOORS * FH, SIDE, 0, (FLOORS * FH) / 2, 0]];
-    for (let i = 1; i < FLOORS; i++) holoBoxes.push([SIDE, 0.0001, SIDE, 0, i * FH, 0]);
-    const holo = new THREE.LineSegments(boxEdges(holoBoxes), holoMat);
-    root.add(holo);
-    const scan = part(new THREE.TorusGeometry(0.36, 0.006, 8, 64), accentGlow(accentHex, 1.5, 0.9), root);
-    scan.rotation.x = Math.PI / 2;
-    const wins = boxes(FLOORS * 4 * 3, new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false }), root, new THREE.PlaneGeometry(1, 1));
-    wins.userData.noShadow = true;
-    const warm = new THREE.Color(0.98, 0.8, 0.52);
-    const R = 1.05;
-    part(new THREE.TorusGeometry(R, 0.012, 8, 128), mats.steel, root, 0, DAIS + 0.006, 0).rotation.x = Math.PI / 2;
-    const robot = new THREE.Group();
-    root.add(robot);
-    part(new THREE.CylinderGeometry(0.055, 0.06, 0.05, 24), mats.white, robot, 0, 0.03, 0);
-    part(new THREE.CylinderGeometry(0.022, 0.022, 0.025, 16), mats.dark, robot, 0, 0.068, 0);
-    part(new THREE.BoxGeometry(0.02, 0.012, 0.03), accentGlow(accentHex, 1.3), robot, 0, 0.04, 0.056);
-    const fanMat = new THREE.MeshBasicMaterial({ color: accent.clone(), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
-    const fanGeo = new THREE.CircleGeometry(0.5, 24, Math.PI / 2 - 0.5, 1.0);
-    fanGeo.rotateX(Math.PI / 2);
-    const fan = part(fanGeo, fanMat, robot, 0, 0.012, 0);
-    fan.userData.noShadow = true;
-    const nodes = [
-        { name: 'BIM', sub: 'The shared model' },
-        { name: 'ROBOTICS', sub: 'Navigating the model' },
-        { name: 'XR', sub: 'Immersive review' },
-        { name: 'DIGITAL TWIN', sub: 'Live operational data' }
-    ];
-    const angleOf = (k) => Math.PI / 4 + (k * Math.PI) / 2;
-    const nodeObjs = nodes.map((n, k) => {
-        const a = angleOf(k);
-        const x = Math.sin(a) * 1.28;
-        const z = Math.cos(a) * 1.28;
-        part(new THREE.CylinderGeometry(0.012, 0.016, 0.6, 10), mats.dark, root, x, DAIS + 0.3, z);
-        const lamp = part(new THREE.SphereGeometry(0.03, 16, 12), new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false }), root, x, DAIS + 0.63, z);
-        const sign = part(new THREE.PlaneGeometry(0.4, 0.1), new THREE.MeshBasicMaterial({ map: cardSign(n.name, n.sub, accentHex, 520, 130), transparent: true, toneMapped: false }), root, x * 1.01, DAIS + 0.5, z * 1.01);
-        sign.rotation.y = a;
-        return { lamp };
-    });
-    const pulse = part(new THREE.SphereGeometry(0.026, 12, 8), accentGlow(accentHex, 1.7), root);
-    const data = boxes(8, accentGlow(accentHex, 1.5), root, new THREE.SphereGeometry(1, 8, 6));
-    data.userData.noShadow = true;
-    const hot = accent.clone().multiplyScalar(1.2);
-    const offLamp = new THREE.Color(0.25, 0.25, 0.27);
-    const onLamp = accent.clone().multiplyScalar(1.6);
-    const hash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
-
-    return {
-        render(t) {
-            const stage = Math.min(3, Math.floor(t / 6));
-            for (let i = 0; i <= FLOORS; i++) {
-                const k = t < 6 ? Math.exp(-(((t - 0.6 - i * 0.7) / 0.45) ** 2)) : 0;
-                tint(slabs, i, WHITE, hot, k);
-            }
-            flush(slabs);
-            // Robotics: one lap of the track, its scanner on the tower.
-            const lap = minJerk(lin(6.3, 11.7, t));
-            const a = angleOf(1) + lap * Math.PI * 2;
-            robot.position.set(Math.sin(a) * R, DAIS, Math.cos(a) * R);
-            robot.rotation.y = a + Math.PI / 2;
-            fan.rotation.y = Math.PI / 2;
-            fanMat.opacity = 0.16 * sstep(6, 6.6, t) * (1 - sstep(11.6, 12, t));
-            // XR: the ring rises and the tower turns holographic, then back.
-            let s = 0;
-            const top = FLOORS * FH + 0.07;
-            if (t >= 12.3 && t < 16.8) s = top * minJerk(lin(12.3, 15, t));
-            else if (t >= 16.8 && t < 18) s = top * (1 - minJerk(lin(16.8, 17.9, t)));
-            solidPlane.constant = -(inst.worldY0 + s);
-            holoPlane.constant = inst.worldY0 + s;
-            holo.visible = s > 0.003;
-            scan.visible = s > 0.003 && s < top - 0.003;
-            scan.position.y = s;
-            // Digital twin: windows lit by occupancy, data up the corners.
-            const twin = sstep(18, 18.6, t) * (1 - sstep(23.6, 24, t));
-            for (let f = 0; f < FLOORS; f++) {
-                for (let side = 0; side < 4; side++) {
-                    for (let w = 0; w < 3; w++) {
-                        const i = (f * 4 + side) * 3 + w;
-                        const on = twin > 0.01 && hash(i, Math.floor(t * 1.2)) > 0.45 ? twin : 0;
-                        const ang = (side * Math.PI) / 2;
-                        // Sits in the glazed part of the bay, above the spandrel.
-                        const y = f * FH + 0.012 + (FH - 0.012) * 0.6;
-                        const off = SIDE / 2 + 0.0015;
-                        const u = (w - 1) * 0.1;
-                        if (on) setInst(wins, i, Math.sin(ang) * off + Math.cos(ang) * u, y, Math.cos(ang) * off - Math.sin(ang) * u, 0.07, 0.05, 1, ang);
-                        else setInst(wins, i, 0, 0, 0, 0, 0, 0);
-                        wins.setColorAt(i, _c.copy(warm).multiplyScalar(Math.max(on, 0.01)));
-                    }
-                }
-            }
-            for (let k = 0; k < 8; k++) {
-                const u = (t * 0.45 + k / 8) % 1;
-                const corner = k % 4;
-                const x = ((corner === 1 || corner === 2 ? 1 : -1) * SIDE) / 2;
-                const z = ((corner >= 2 ? 1 : -1) * SIDE) / 2;
-                const sc = twin * 0.012;
-                setInst(data, k, x * 1.06, (k < 4 ? u : 1 - u) * FLOORS * FH, z * 1.06, sc, sc, sc);
-            }
-            flush(wins, data);
-            nodeObjs.forEach((n, k) => n.lamp.material.color.copy(k === stage ? onLamp : offLamp));
-            const go = lin(5.2, 6, t - stage * 6);
-            pulse.visible = go > 0 && go < 1;
-            const pa = angleOf(stage) + go * (Math.PI / 2);
-            pulse.position.set(Math.sin(pa) * R, DAIS + 0.035, Math.cos(pa) * R);
-        }
     };
 }

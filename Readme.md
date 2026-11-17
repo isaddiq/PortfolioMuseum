@@ -38,7 +38,7 @@ The models are built like architectural presentation models at about 1:16: each 
 
 ### Residents
 
-Two **cleaning robots** look after the lobby, Grand Hall and contact room: each leaves its charging dock, plans paths over the walkable grid, spirals over a spot, waits for anyone in its way, and drives home to charge when its battery is low (the dock shows the charge). Two **cats** (a ginger tabby and a tuxedo) wander the building, sit, nap on benches, and now and then hop onto a passing cleaning robot for a ride. The cats are single skinned meshes on a skeleton, with shell fur (ten layers of strands, combed back, darker at the roots) drawn when you are near, a sculpted head with nose leather, slit-pupil eyes and whiskers, and small signs of life: breathing, ear twitches, tail-tip flicks and the occasional wash of a paw; click a robot or a cat to see what it is doing.
+Two **cleaning robots** look after the lobby, Grand Hall and contact room: each leaves its charging dock, plans paths over the walkable grid, spirals over a spot, waits for anyone in its way, and drives home to charge when its battery is low (the dock shows the charge). Click a robot to see what it is doing.
 
 Every work has its caption sign-written on the wall above it, and wall texts, gallery introductions and the big lettering are painted straight onto the plaster: they take the wall's light, shadows and texture, with a little wear in the paint.
 
@@ -57,6 +57,9 @@ The **catalogue** button lists every work as text (the accessible view), and the
 - **Sharp exhibits**: wall texts are painted supersampled, and photos are sized to their frame, so close-ups stay crisp without filling GPU memory; textures load and unload by distance
 - **Day and night** ease into each other over a second and a half; at night the architectural and picture lights take over from the skylight
 - **Public rooms**: a honed stone dado with a bronze cap, bronze inlay rings under the oculus; a natural ~60° vertical field of view on wide screens
+- **Models in the round**: one gallery spot follows the visitor to the nearest demonstration and casts crisp shadows on it; with a demonstration's panel open the view drifts slowly from side to side around the model (any movement of your own ends it), and the edge of its base lights up at each new stage
+- **Framed works** come a few centimetres off the wall while you point at them or stand before them
+- **Room culling** (`cull.js`): only what can be seen through the doorways is drawn, so the galleries behind a wall cost nothing; shaders are compiled in parallel while the loader is up
 - Rendering is on demand: frames are drawn only while something moves or animates nearby, nothing runs while the tab is hidden, and demonstrations, people and residents off screen keep time without being drawn
 
 ## 🏗️ Structure
@@ -84,7 +87,7 @@ The **catalogue** button lists every work as text (the accessible view), and the
 |   |                       # controls, panels, post (bloom pipeline), reflect (mirrored floors),
 |   |                       # visitors, data, main, nav (walkable grid and A*),
 |   |                       # research + research-defs + demos-a/demos-b + demo-kit (demonstrations),
-|   |                       # companions + cat-model (robots and cats), audio (optional music)
+|   |                       # companions (cleaning robots), cull (room culling), audio (optional music)
 |   |-- museum/             # Generated gallery copies, textures/ (Poly Haven surfaces), people/ (visitors)
 |   |-- images/             # Originals: certificates, covers, news, profile, projects, venues, ...
 |   |-- icons/, logos/      # Skill, social and organisation logos

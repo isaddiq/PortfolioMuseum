@@ -1,13 +1,14 @@
 // What each research demonstration shows: title, stages (with the time each
 // starts, in seconds), a description for the panel, and links to the
-// portfolio items it relates to. The builders live in demos-a.js and
-// demos-b.js.
+// portfolio items it relates to. The builders live in demos-a.js,
+// demos-b.js and demos-c.js (the lobby's centrepiece).
 //
 // Wording rule: these describe methods. They never state results, figures or
 // findings; the models are conceptual simulations.
 
 import { buildBIM, buildInformatics, buildXR, buildRobot, buildDfMA } from './demos-a.js';
-import { buildAI, buildTwin, buildInterop, buildNav, buildEcosystem } from './demos-b.js';
+import { buildAI, buildTwin, buildInterop, buildNav } from './demos-b.js';
+import { buildEcosystem } from './demos-c.js';
 
 export const DEMOS = {
     bim: {

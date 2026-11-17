@@ -136,7 +136,7 @@ export function createRoomCulling(museum) {
         },
         /**
          * Could something of radius r standing at (x, z) be seen from where
-         * the eye is? For things that move about: people, cats, robots.
+         * the eye is? For things that move about: people and robots.
          */
         sees(x, z, r = 0.5) {
             const entry = rooms.get(roomAt(x, z)?.id);

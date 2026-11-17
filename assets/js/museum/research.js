@@ -111,6 +111,28 @@ class Installation {
         this.root.scale.setScalar(this.scale);
         if (!place.round) this.root.position.z = -0.035;
         group.add(this.root);
+        // A fine line of light round the base, in the accent colour: it flashes at each new stage.
+        const glow = this.accent.clone();
+        glow.multiplyScalar(2.4 / Math.max(glow.r, glow.g, glow.b, 0.2));
+        const edgeMat = new THREE.MeshBasicMaterial({ color: glow, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+        let edgeGeo;
+        if (place.round) edgeGeo = new THREE.RingGeometry(place.drum + 0.012, place.drum + 0.03, 96);
+        else {
+            const w = (PLINTH_W - 0.08) / 2;
+            const d = (PLINTH_D - 0.42) / 2;
+            const shape = new THREE.Shape().moveTo(-w, -d).lineTo(w, -d).lineTo(w, d).lineTo(-w, d).closePath();
+            const b = 0.014;
+            shape.holes.push(new THREE.Path().moveTo(-w + b, -d + b).lineTo(-w + b, d - b).lineTo(w - b, d - b).lineTo(w - b, -d + b).closePath());
+            edgeGeo = new THREE.ShapeGeometry(shape);
+        }
+        this.edge = new THREE.Mesh(edgeGeo, edgeMat);
+        this.edge.rotation.x = -Math.PI / 2;
+        this.edge.position.set(0, (place.round ? place.topY : PLINTH_H + BOARD) + 0.0016, place.round ? 0 : -0.17);
+        this.edge.visible = false;
+        this.edge.userData.noPick = true;
+        this.edge.userData.noShadow = true;
+        this.pulse = 0;
+        group.add(this.edge);
         group.updateMatrixWorld(true);
         this.worldY0 = this.root.getWorldPosition(new THREE.Vector3()).y;
 
@@ -299,12 +321,23 @@ class Installation {
         const stage = this.stageAt();
         const progress = this.progressText();
         if (stage !== this.stage || progress !== this.lastProgress) {
+            // A new stage: the edge of the model's base lights up for a moment.
+            if (stage !== this.stage && this.stage >= 0 && !this.calm) this.pulse = 1;
             this.stage = stage;
             this.lastProgress = progress;
             if (this.labelSlot.state === 'ready') this.museum.repaint(this.labelSlot);
             this.research.changed(this);
         }
         const visible = this.shown() && (!this.museum.frustum || this.museum.frustum.intersectsSphere(this.sphere));
+        const pulsing = this.pulse > 0;
+        if (pulsing) {
+            this.pulse = Math.max(0, this.pulse - dt / 1.1);
+            const k = 1 - this.pulse;
+            this.edge.visible = this.pulse > 0;
+            this.edge.material.opacity = this.pulse * this.pulse;
+            this.edge.scale.setScalar(1 + 0.035 * (1 - (1 - k) * (1 - k)));
+        }
+        if (visible && pulsing && (!this.playing && !this.dirty)) return true;
         if (!visible || (!this.playing && !this.dirty)) return false;
         this.dirty = false;
         this.model.render(this.t, this.playing ? dt : 0);
@@ -417,7 +450,9 @@ export class Research {
         const before = s.level;
         s.level += clamp(want - s.level, -dt * 2.2, dt * 2.2);
         const night = document.documentElement.dataset.theme === 'dark';
-        s.light.intensity = s.level * s.level * (3 - 2 * s.level) * (night ? 1.7 : 0.85);
+        // The light lifts a little with each new stage of the model it is on.
+        const lift = 1 + 0.35 * (s.on?.pulse || 0) ** 2;
+        s.light.intensity = s.level * s.level * (3 - 2 * s.level) * (night ? 1.7 : 0.85) * lift;
         // No shadow map is drawn while the light is out.
         s.light.shadow.autoUpdate = s.level > 0.01;
         return before !== s.level;

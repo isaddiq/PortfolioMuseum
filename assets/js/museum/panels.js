@@ -824,26 +824,15 @@ const RENDERERS = {
 
     resident(payload) {
         const s = payload.describe?.() || {};
-        if (payload.robot) {
-            return {
-                eyebrow: 'Museum residents',
-                title: payload.robot.name,
-                html: `
-                    <p class="lead">One of two cleaning robots that look after the floors of the lobby, the Grand Hall and the contact room.</p>
-                    ${metaGrid([['Now', s.state], ['Battery', `${s.battery}%`], ['Passenger', s.rider ? `${s.rider} the cat` : 'None']])}
-                    <p>It plans each trip over the same walkable grid that guides your own clicks, spirals over a spot to clean it, waits for anyone in its way, and drives back to its charging dock when the battery runs low.</p>
-                    <p class="muted small">A small working example of robot navigation in a mapped building; see the robot navigation demonstration in Gallery VI.</p>
-                    <p><button type="button" class="btn" data-action="go:demo-nav"><i class="fas fa-route" aria-hidden="true"></i> Robot navigation demonstration</button></p>`
-            };
-        }
-        const cat = payload.cat;
         return {
             eyebrow: 'Museum residents',
-            title: cat.name,
+            title: payload.robot.name,
             html: `
-                <p class="lead">${e(cat.name)} is one of the museum’s two cats.</p>
-                ${metaGrid([['Now', s.state]])}
-                <p>The cats wander the galleries, nap on the benches, and sometimes hitch a ride on a cleaning robot.</p>`
+                <p class="lead">One of two cleaning robots that look after the floors of the lobby, the Grand Hall and the contact room.</p>
+                ${metaGrid([['Now', s.state], ['Battery', `${s.battery}%`]])}
+                <p>It plans each trip over the same walkable grid that guides your own clicks, spirals over a spot to clean it, waits for anyone in its way, and drives back to its charging dock when the battery runs low.</p>
+                <p class="muted small">A small working example of robot navigation in a mapped building; see the robot navigation demonstration in Gallery VI.</p>
+                <p><button type="button" class="btn" data-action="go:demo-nav"><i class="fas fa-route" aria-hidden="true"></i> Robot navigation demonstration</button></p>`
         };
     },
 
