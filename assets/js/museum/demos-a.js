@@ -48,6 +48,7 @@ const BIM_CLASS = {
     IfcColumn: { color: '#d9a252', pset: 'Pset_ColumnCommon', material: 'Reinforced concrete', bearing: true },
     IfcWall: { color: '#c6b49c', pset: 'Pset_WallCommon', material: 'Insulated wall panel', bearing: false },
     IfcCurtainWall: { color: '#79c0d8', pset: 'Pset_CurtainWallCommon', material: 'Glazing in aluminium frame', bearing: false },
+    IfcDoor: { color: '#c4855a', pset: 'Pset_DoorCommon', material: 'Glazed leaves in a steel frame', bearing: false },
     IfcUnitaryEquipment: { color: '#7fae7a', pset: 'Pset_UnitaryEquipmentTypeCommon', material: 'Steel casing', bearing: false }
 };
 
@@ -73,6 +74,8 @@ export function buildBIM({ root, mats, accent, inst }) {
             cls: 'IfcColumn', type: 'COLUMN', set: 'conc', name: `Column C-${'ABC'[zi]}${xi + 1}`, level: L,
             pos: [x, y0 + (FH - 0.02) / 2, z], size: [0.032, FH - 0.02, 0.032], base: y0, mode: 'grow', t0: t0 + (k++) * 0.06, dur: 0.5
         })));
+        // The stair and lift core rises with the columns of its storey.
+        add({ cls: 'IfcWall', type: 'SHEAR', set: 'conc', name: `Core wall, ${L === 0 ? 'ground floor' : `level ${L}`}`, level: L, pos: [-0.22, y0 + (FH - 0.02) / 2, -0.23], size: [0.15, FH - 0.02, 0.13], base: y0, mode: 'grow', t0: t0 + 0.5, dur: 0.6, bearing: true });
         add({ cls: 'IfcSlab', type: L === 2 ? 'ROOF' : 'FLOOR', set: 'slab', name: L === 2 ? 'Roof slab' : `Floor slab, level ${L + 1}`, level: L + 1, pos: [0, y0 + FH - 0.01, cz], size: [0.8, 0.02, 0.52], mode: 'drop', t0: t0 + 1.25, dur: 0.8 });
     }
     for (let L = 0; L < 3; L++) {
@@ -84,9 +87,13 @@ export function buildBIM({ root, mats, accent, inst }) {
         add({ cls: 'IfcWall', type: 'SOLIDWALL', set: 'wall', name: `External wall W-W${L + 1}`, level: L, pos: [-0.356, y, cz], size: [0.02, h, 0.44], mode: 'wipe', axis: 'z', t0: t0 + 0.3, dur: 0.6, external: true });
         add({ cls: 'IfcWall', type: 'SOLIDWALL', set: 'wall', name: `External wall W-E${L + 1}`, level: L, pos: [0.356, y, cz], size: [0.02, h, 0.44], mode: 'wipe', axis: 'z', t0: t0 + 0.45, dur: 0.6, external: true });
     }
+    add({ cls: 'IfcDoor', type: 'DOOR', set: 'door', name: 'Entrance doors D-01', level: 0, pos: [0.11, 0.055 + 0.055, 0.099], size: [0.1, 0.11, 0.006], mode: 'wipe', axis: 'x', t0: 13.2, dur: 0.5, external: true });
+    const RY = 0.055 + 3 * FH;
+    [[0, RY + 0.012, 0.126, 0.8, 0.024, 0.012, 'x', 'S'], [0, RY + 0.012, -0.386, 0.8, 0.024, 0.012, 'x', 'N'], [-0.394, RY + 0.012, cz, 0.012, 0.024, 0.5, 'z', 'W'], [0.394, RY + 0.012, cz, 0.012, 0.024, 0.5, 'z', 'E']]
+        .forEach(([x, y, z, w, h, d, axis, side], n) => add({ cls: 'IfcWall', type: 'PARAPET', set: 'slab', name: `Roof parapet P-${side}`, level: 3, pos: [x, y, z], size: [w, h, d], mode: 'wipe', axis, t0: 15.0 + n * 0.12, dur: 0.5, external: true }));
     add({ cls: 'IfcUnitaryEquipment', type: 'AIRHANDLER', set: 'equip', name: 'Rooftop air-handling unit', level: 3, pos: [0.14, 0.055 + 3 * FH + 0.025, -0.2], size: [0.16, 0.05, 0.12], mode: 'drop', t0: 15.6, dur: 0.8 });
 
-    const sets = { conc: mats.concrete, slab: mats.precast, wall: mats.brickwall, glass: mats.curtain, equip: mats.grille };
+    const sets = { conc: mats.concrete, slab: mats.precast, wall: mats.brickwall, glass: mats.curtain, equip: mats.grille, door: mats.timber };
     // Context, as a model maker would build it: a paved forecourt, lawn, trees and people.
     part(new THREE.BoxGeometry(1.0, 0.004, 0.7), mats.tiles, root, 0, 0.002, cz);
     part(new THREE.BoxGeometry(1.2, 0.003, 0.84), mats.grass, root, 0, 0.0015, -0.13);
@@ -101,6 +108,10 @@ export function buildBIM({ root, mats, accent, inst }) {
         list.forEach((e, i) => { e.mesh = mesh; e.idx = i; mesh.userData.bimEls[i] = els.indexOf(e); });
         meshes[name] = mesh;
     }
+    // Mullions and a transom stand proud of each curtain wall; they follow it as it closes.
+    const curtains = els.filter((e) => e.cls === 'IfcCurtainWall');
+    const MULL = 10;
+    const mullions = boxes(curtains.length * (MULL + 1), mats.dark, root);
     const classColors = Object.fromEntries(Object.entries(BIM_CLASS).map(([k2, v]) => [k2, new THREE.Color(v.color)]));
     const hot = accent.clone().multiplyScalar(1.15);
     const OUT = 24;
@@ -116,6 +127,7 @@ export function buildBIM({ root, mats, accent, inst }) {
                 const q = p * (1 - out);
                 let [x, y, z] = e.pos;
                 let [sx, sy, sz] = e.size;
+                e.q = q;
                 if (q <= 0.001) {
                     setInst(e.mesh, e.idx, x, y, z, 0, 0, 0);
                     return;
@@ -130,7 +142,19 @@ export function buildBIM({ root, mats, accent, inst }) {
                 else _c.copy(WHITE).lerp(classColors[e.cls], cls);
                 e.mesh.setColorAt(e.idx, _c);
             });
-            flush(...Object.values(meshes));
+            curtains.forEach((e, c) => {
+                const [w, h] = e.size;
+                const y = e.pos[1];
+                const z = e.pos[2] + 0.006;
+                for (let m = 0; m < MULL; m++) {
+                    const f = m / (MULL - 1);
+                    const on = e.q > 0.001 && f <= e.q + 1e-3;
+                    setInst(mullions, c * (MULL + 1) + m, -w / 2 + f * w, y, z, on ? 0.007 : 0, on ? h : 0, on ? 0.01 : 0);
+                }
+                const tw = w * (e.q || 0);
+                setInst(mullions, c * (MULL + 1) + MULL, -w / 2 + tw / 2, y - h * 0.18, z, tw, tw > 0.002 ? 0.006 : 0, tw > 0.002 ? 0.008 : 0);
+            });
+            flush(...Object.values(meshes), mullions);
         },
         pick(hit) {
             const list = hit.object.userData.bimEls;
@@ -150,7 +174,7 @@ export function buildBIM({ root, mats, accent, inst }) {
                     ['Building storey', e.level < 0 ? 'Foundation' : e.level === 0 ? 'Ground floor' : e.level === 3 ? 'Roof' : `Level ${e.level}`],
                     ['Material', c.material],
                     ['Size (W × H × D)', `${dims[0]} × ${dims[1]} × ${dims[2]} m`],
-                    [`${c.pset}.LoadBearing`, c.bearing ? 'TRUE' : 'FALSE'],
+                    [`${c.pset}.LoadBearing`, (e.bearing ?? c.bearing) ? 'TRUE' : 'FALSE'],
                     [`${c.pset}.IsExternal`, e.external ? 'TRUE' : (e.cls === 'IfcColumn' || e.cls === 'IfcSlab' ? 'FALSE' : '-')]
                 ],
                 note: 'Illustrative properties of a conceptual 1:16 model, generated for this demonstration.'
@@ -205,8 +229,14 @@ export function buildInformatics({ root, mats, accent }) {
 
     // Building under construction.
     const B = { x: -0.2, z: -0.24, w: 0.34, d: 0.24, lh: 0.055 };
-    const levels = boxes(6, mats.concrete, root);
+    const levels = boxes(6, mats.concrete, root);          // the core of each storey
     const slabEdges = boxes(6, mats.precast, root);
+    const FRAME = [];
+    for (const fx of [-0.42, -0.14, 0.14, 0.42]) for (const fz of [-0.4, 0.4]) FRAME.push([fx * B.w, fz * B.d]);
+    FRAME.push([-0.42 * B.w, 0], [0.42 * B.w, 0]);
+    const frame = boxes(6 * FRAME.length, mats.concrete, root);
+    // Edge protection on the working deck: it climbs with the top floor.
+    const rails = boxes(4, mats.yellow, root);
     const shell = new THREE.Mesh(new THREE.BoxGeometry(B.w + 0.01, 0.006, B.d + 0.01), mats.stone);
     shell.position.set(B.x, 0.023, B.z);
     root.add(shell);
@@ -225,10 +255,23 @@ export function buildInformatics({ root, mats, accent }) {
     part(new THREE.CylinderGeometry(0.0012, 0.0012, 0.3, 4), mats.dark, slew, 0.15, 0.06, 0).rotation.z = Math.PI / 2 - 0.35;
     part(new THREE.BoxGeometry(0.06, 0.04, 0.04), mats.concrete, slew, -0.12, 0.0, 0);
     part(new THREE.BoxGeometry(0.03, 0.03, 0.03), mats.dark, slew, 0.03, -0.02, 0.0);
+    part(softBox(0.034, 0.034, 0.03, 0.004), mats.paint, slew, 0.035, -0.022, 0.022);   // the operator's cab
+    part(new THREE.BoxGeometry(0.03, 0.018, 0.002), mats.glass, slew, 0.035, -0.02, 0.0375);
     const trolley = part(new THREE.BoxGeometry(0.03, 0.012, 0.03), mats.dark, slew, 0.3, 0, 0);
-    const cable = part(new THREE.BoxGeometry(0.003, 1, 0.003), mats.dark, slew, 0.3, -0.3, 0);
-    const hook = part(new THREE.BoxGeometry(0.02, 0.012, 0.02), mats.dark, slew, 0.3, -0.5, 0);
-    const load = part(new THREE.BoxGeometry(0.08, 0.026, 0.05), mats.timber, slew, 0.3, -0.52, 0);
+    // Everything below the trolley hangs from it and swings as the jib slews.
+    const pend = new THREE.Group();
+    slew.add(pend);
+    const HOOK = 0.05;      // the hook block rides this far above the load's lifting points
+    const cable = part(new THREE.BoxGeometry(0.0026, 1, 0.0026), mats.dark, pend, 0, -0.3, 0);
+    const hook = part(softBox(0.018, 0.022, 0.014, 0.004), mats.yellow, pend, 0, -0.5, 0);
+    const load = part(new THREE.BoxGeometry(0.08, 0.026, 0.05), mats.timber, pend, 0, -0.52, 0);
+    for (const bx of [-0.026, 0.026]) part(new THREE.BoxGeometry(0.006, 0.028, 0.052), mats.dark, load, bx, 0, 0);     // strapping
+    const slingPts = [];
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) slingPts.push(0, HOOK - 0.01, 0, sx * 0.036, 0.013, sz * 0.022);
+    const slingGeo = new THREE.BufferGeometry();
+    slingGeo.setAttribute('position', new THREE.Float32BufferAttribute(slingPts, 3));
+    load.add(new THREE.LineSegments(slingGeo, new THREE.LineBasicMaterial({ color: '#2a2c30' })));
+    const sway = { a: 0, v: 0, lastYaw: null, lastRate: 0 };
     // Laydown area: the stock the crane lifts from.
     const pick = { x: 0.38, z: -0.12 };
     part(new THREE.BoxGeometry(0.11, 0.022, 0.08), mats.timber, root, pick.x, 0.031, pick.z);
@@ -407,21 +450,44 @@ export function buildInformatics({ root, mats, accent }) {
             const clear = sstep(24.6, 25.8, t);
             placed.forEach((p, i) => {
                 const g = easeOut(lin(p, p + 0.7, t)) * (1 - sstep(24.6 + (5 - i) * 0.12, 25.2 + (5 - i) * 0.12, t));
-                // A storey set back behind its slab edge, so the frame reads floor by floor.
-                setInst(levels, i, B.x, 0.026 + i * B.lh + (B.lh * g) / 2, B.z, B.w - 0.016, B.lh * g * 0.86, B.d - 0.016);
-                setInst(slabEdges, i, B.x, 0.026 + i * B.lh + B.lh * g - 0.004 * g, B.z, B.w * (g > 0.01 ? 1 : 0), 0.008 * g, B.d);
+                // A frame, not a block: columns and a core under each slab, open between them.
+                const y0 = 0.026 + i * B.lh;
+                const on = g > 0.01 ? 1 : 0;
+                setInst(levels, i, B.x - 0.07, y0 + (B.lh * g) / 2, B.z - 0.03, 0.09 * on, B.lh * g, 0.07 * on);
+                FRAME.forEach(([fx, fz], k) => setInst(frame, i * FRAME.length + k, B.x + fx, y0 + (B.lh * g * 0.86) / 2, B.z + fz, 0.014 * on, B.lh * g * 0.86, 0.014 * on));
+                setInst(slabEdges, i, B.x, y0 + B.lh * g - 0.004 * g, B.z, B.w * on, 0.008 * g, B.d * on);
             });
-            flush(levels, slabEdges);
+            const deck = 0.026 + placed.reduce((sum, p, i) => sum + B.lh * easeOut(lin(p, p + 0.7, t)) * (1 - sstep(24.6 + (5 - i) * 0.12, 25.2 + (5 - i) * 0.12, t)), 0);
+            const up = deck > 0.03 ? 1 : 0;
+            setInst(rails, 0, B.x, deck + 0.012, B.z - B.d / 2, B.w * up, 0.0025, 0.0025);
+            setInst(rails, 1, B.x, deck + 0.012, B.z + B.d / 2, B.w * up, 0.0025, 0.0025);
+            setInst(rails, 2, B.x - B.w / 2, deck + 0.012, B.z, 0.0025, 0.0025, B.d * up);
+            setInst(rails, 3, B.x + B.w / 2, deck + 0.012, B.z, 0.0025, 0.0025, B.d * up);
+            flush(levels, slabEdges, frame, rails);
             const c = craneState(t);
             slew.rotation.y = c.yaw;
             trolley.position.x = c.r;
             const top = M.h + 0.02;
             const drop = top - c.hookY;
-            cable.position.set(c.r, -drop / 2, 0);
-            cable.scale.y = Math.max(0.001, drop);
-            hook.position.set(c.r, -drop, 0);
+            pend.position.x = c.r;
+            const rope = Math.max(0.001, drop - HOOK);
+            cable.position.set(0, -rope / 2, 0);
+            cable.scale.y = rope;
+            hook.position.set(0, -rope - 0.008, 0);
             load.visible = c.carry && clear < 0.01;
-            load.position.set(c.r, -drop - 0.022, 0);
+            load.position.set(0, -drop - 0.013, 0);
+            // The load is a pendulum: it lags as the jib speeds up, runs on as it
+            // slows, and the swing dies away. A longer rope swings more slowly.
+            if (dt > 0 && sway.lastYaw !== null) {
+                const rate = (c.yaw - sway.lastYaw) / dt;
+                const push = clamp((rate - sway.lastRate) / dt, -4, 4) * c.r;
+                const w0 = 3.2 / Math.sqrt(Math.max(0.12, drop) / 0.3);
+                sway.v += (-w0 * w0 * sway.a - 2 * 0.16 * w0 * sway.v + (push * 0.08) / Math.max(0.15, drop)) * dt;
+                sway.a = clamp(sway.a + sway.v * dt, -0.16, 0.16);
+                sway.lastRate = rate;
+            }
+            sway.lastYaw = c.yaw;
+            pend.rotation.x = sway.a;
             if (dt > 0) {
                 hum = clamp(Math.abs(c.yaw - lastYaw) / dt / 0.6, 0, 1) * 0.6;
                 lastYaw = c.yaw;
@@ -445,6 +511,7 @@ export function buildInformatics({ root, mats, accent }) {
             flush(packets);
             paintScreen(t);
         },
+        reset() { sway.a = sway.v = sway.lastRate = 0; sway.lastYaw = null; },
         hum: () => hum
     };
 }
@@ -501,10 +568,19 @@ export function buildXR({ root, mats, accent, inst }) {
     // A headset that orbits the hologram, with its field of view.
     const headset = new THREE.Group();
     root.add(headset);
-    part(new THREE.BoxGeometry(0.085, 0.045, 0.05), mats.dark, headset, 0, 0, 0);
-    part(new THREE.BoxGeometry(0.075, 0.032, 0.004), accentGlow(accentHex, 1.1), headset, 0, 0, 0.026);
-    const strap = part(new THREE.TorusGeometry(0.048, 0.005, 6, 24), mats.dark, headset, 0, 0, -0.035);
+    // A see-through headset: visor, brow housing with cameras, halo band and rear battery.
+    const visorMat = new THREE.MeshPhysicalMaterial({ color: '#1a1420', roughness: 0.08, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, transparent: true, opacity: 0.82, side: THREE.DoubleSide });
+    part(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 32, 1, true, -1.05, 2.1), visorMat, headset, 0, -0.004, -0.018);
+    part(new THREE.CylinderGeometry(0.052, 0.052, 0.016, 32, 1, false, -1.15, 2.3), mats.dark, headset, 0, 0.024, -0.018);
+    for (const sx of [-1, 1]) part(new THREE.SphereGeometry(0.0045, 10, 8), accentGlow(accentHex, 1.4), headset, sx * 0.024, 0.024, 0.0285);
+    part(new THREE.BoxGeometry(0.03, 0.004, 0.003), accentGlow(accentHex, 1.2), headset, 0, 0.0245, 0.0335);
+    const strap = part(new THREE.TorusGeometry(0.052, 0.0055, 8, 40), mats.dark, headset, 0, 0.022, -0.02);
     strap.rotation.x = Math.PI / 2;
+    strap.scale.y = 1.22;
+    const over = part(new THREE.TorusGeometry(0.056, 0.004, 6, 24, Math.PI), mats.dark, headset, 0, 0.022, -0.03);
+    over.rotation.y = Math.PI / 2;
+    part(softBox(0.05, 0.03, 0.016, 0.006), mats.dark, headset, 0, 0.02, -0.088);
+    part(softBox(0.07, 0.014, 0.012, 0.005), mats.rubber, headset, 0, 0.012, 0.022);
     const fov = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: accent.clone().multiplyScalar(1.4), transparent: true, opacity: 0.5, toneMapped: false }));
     fov.geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(16 * 3), 3));
     root.add(fov);
@@ -643,8 +719,24 @@ export function buildRobot({ root, mats, accent, inst }) {
     zAxis(0.026, 0.065, joint, wrist);
     const roll = new THREE.Group();
     wrist.add(roll);
-    part(softBox(0.04, 0.05, 0.05, 0.008), mats.dark, roll, 0.035, 0, 0);
-    const fingers = [-1, 1].map((s) => part(new THREE.BoxGeometry(0.045, 0.014, 0.012), mats.steel, roll, 0.075, 0, s * 0.03));
+    part(new THREE.CylinderGeometry(0.02, 0.02, 0.012, 20), mats.steel, roll, 0.012, 0, 0).rotation.z = Math.PI / 2;   // tool flange
+    part(softBox(0.036, 0.05, 0.062, 0.008), mats.dark, roll, 0.036, 0, 0);
+    part(new THREE.BoxGeometry(0.006, 0.02, 0.07), mats.steel, roll, 0.056, 0, 0);          // the slide the jaws run on
+    const fingers = [-1, 1].map((s) => {
+        const f = part(new THREE.BoxGeometry(0.05, 0.016, 0.01), mats.steel, roll, 0.079, 0, s * 0.03);
+        part(new THREE.BoxGeometry(0.03, 0.02, 0.004), mats.rubber, f, 0.008, 0, -s * 0.006);   // grip pad
+        return f;
+    });
+    // Dress pack: the hose that carries power and air along the arm.
+    const hose = (pts, parent) => part(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((q) => new THREE.Vector3(...q))), 24, 0.006, 8), mats.rubber, parent);
+    hose([[0.02, 0.03, 0.034], [0.1, 0.045, 0.04], [0.2, 0.045, 0.04], [L1 - 0.02, 0.03, 0.034]], shoulder);
+    hose([[0.03, 0.024, 0.027], [0.1, 0.036, 0.03], [0.19, 0.036, 0.03], [L2 - 0.03, 0.022, 0.026]], elbow);
+    for (const hx of [0.07, 0.23]) part(new THREE.BoxGeometry(0.012, 0.012, 0.016), mats.dark, shoulder, hx, 0.032, 0.036);
+    // Signal tower on the cabinet: amber while a move is planned, green while it runs.
+    part(new THREE.CylinderGeometry(0.004, 0.004, 0.03, 8), mats.steel, cab, -0.035, 0.215, 0);
+    const lampAmber = part(new THREE.CylinderGeometry(0.009, 0.009, 0.014, 14), new THREE.MeshBasicMaterial({ color: '#3a2c10', toneMapped: false }), cab, -0.035, 0.237, 0);
+    const lampGreen = part(new THREE.CylinderGeometry(0.009, 0.009, 0.014, 14), new THREE.MeshBasicMaterial({ color: '#12301c', toneMapped: false }), cab, -0.035, 0.252, 0);
+    lampAmber.userData.noShadow = lampGreen.userData.noShadow = true;
 
     // Pallet and wall course.
     part(new THREE.BoxGeometry(0.2, 0.02, 0.15), mats.timber, root, 0.36, 0.01, 0.12);
@@ -734,6 +826,9 @@ export function buildRobot({ root, mats, accent, inst }) {
             if (!tail) tip = tipAt(n, u);
             else tip = above(wallSlot(5)).lerp(HOME, minJerk(lin(6 * P, 6 * P + 1.8, t)));
             solve(tip, dt);
+            const planning = !tail && u < 0.9;
+            lampAmber.material.color.setRGB(1.6, 1.0, 0.2).multiplyScalar(planning ? 0.6 + 0.4 * Math.sin(t * 14) : 0.1);
+            lampGreen.material.color.setRGB(0.3, 1.5, 0.55).multiplyScalar(!planning && hum > 0.03 ? 1 : 0.1);
             const g = tail ? 0 : grip(u);
             fingers.forEach((f, k) => { f.position.z = (k ? 1 : -1) * mix(0.032, BRICK[0] / 2 + 0.006, g); });
             // Bricks: on the pallet, in the gripper, or in the wall.
@@ -776,6 +871,7 @@ export function buildRobot({ root, mats, accent, inst }) {
 
 export function buildDfMA({ root, mats, accent, inst }) {
     const MW = 0.2, MH = 0.11, MD = 0.13;
+    const SL = 0.04;        // the spreader beam rides this far above the module, on four slings
     const BED = { x: -0.36, z: -0.12, y: 0.02 };
     const slots = [];
     for (let level = 0; level < 3; level++) for (const x of [0.17, 0.39]) slots.push({ x, z: -0.12, y: 0.016 + level * (MH + 0.002) });
@@ -794,6 +890,29 @@ export function buildDfMA({ root, mats, accent, inst }) {
     const pivot = new THREE.Group();
     root.add(pivot);
     const spreader = part(new THREE.BoxGeometry(0.22, 0.012, 0.03), yellow, pivot, 0, 0, 0);
+    for (const sx of [-1, 1]) part(new THREE.BoxGeometry(0.012, 0.01, MD), yellow, pivot, sx * 0.095, -0.002, 0);     // cross-heads
+    part(softBox(0.03, 0.03, 0.022, 0.005), mats.dark, pivot, 0, 0.018, 0);                                            // hook block
+    const slingPts = [];
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) slingPts.push(sx * 0.095, -0.006, sz * (MD / 2 - 0.004), sx * (MW / 2 - 0.008), -SL, sz * (MD / 2 - 0.008));
+    const slingGeo = new THREE.BufferGeometry();
+    slingGeo.setAttribute('position', new THREE.Float32BufferAttribute(slingPts, 3));
+    const slings = new THREE.LineSegments(slingGeo, new THREE.LineBasicMaterial({ color: '#1f2023' }));
+    pivot.add(slings);
+    // The gantry, dressed: base plates, knee braces, tie beams, and a hoist on the crab.
+    for (const x of [-0.56, 0.58]) {
+        for (const z of [-0.3, 0.06]) {
+            part(new THREE.BoxGeometry(0.05, 0.006, 0.05), mats.steel, root, x, 0.003, z);
+            const brace = part(new THREE.BoxGeometry(0.1, 0.01, 0.01), yellow, root, x + (x < 0 ? 0.034 : -0.034), GY - 0.046, z);
+            brace.rotation.z = x < 0 ? Math.PI / 4 : -Math.PI / 4;
+        }
+        part(new THREE.BoxGeometry(0.016, 0.016, 0.38), yellow, root, x, GY - 0.2, -0.12);
+    }
+    const crab = new THREE.Group();
+    root.add(crab);
+    part(softBox(0.07, 0.04, 0.07, 0.006), mats.dark, crab, 0, GY + 0.05, -0.12);                  // hoist motor
+    const drum = part(new THREE.CylinderGeometry(0.014, 0.014, 0.06, 16), mats.steel, crab, 0, GY + 0.012, -0.12);
+    drum.rotation.x = Math.PI / 2;
+    for (const z of [-0.3, 0.06]) for (const dx of [-0.02, 0.02]) part(new THREE.CylinderGeometry(0.008, 0.008, 0.03, 12), mats.steel, crab, dx, GY + 0.02, z).rotation.x = Math.PI / 2;
 
     // Facade texture for the finished modules.
     const facade = art.makeCanvas(256, 140, 1);
@@ -829,6 +948,8 @@ export function buildDfMA({ root, mats, accent, inst }) {
         g.position.set(BED.x + x, BED.y + 0.012, BED.z + z);
         root.add(g);
         const panel = part(geo, panelMat, g, 0, (MH - 0.012) / 2, 0);
+        // The long walls arrive with their windows already fitted.
+        if (axis === 'x') for (const wx of [-0.05, 0.05]) part(new THREE.BoxGeometry(0.038, 0.054, T + 0.002), mats.glass, g, wx, 0.051, 0);
         return { g, panel, axis, sign };
     };
     const walls = [
@@ -852,13 +973,13 @@ export function buildDfMA({ root, mats, accent, inst }) {
     }
     function hookY(i, u) {
         const top = 0.56;
-        const bedTop = BED.y + MH + 0.008;
-        const slotTop = slots[i].y + MH + 0.008;
+        const bedTop = BED.y + MH + SL;
+        const slotTop = slots[i].y + MH + SL;
         if (u < 2.1) return top;
         if (u < 2.5) return mix(top, bedTop, minJerk(lin(2.1, 2.5, u)));
-        if (u < 3.2) return mix(bedTop, TRAVEL + MH + 0.008, minJerk(lin(2.5, 3.2, u)));
-        if (u < 4.6) return TRAVEL + MH + 0.008;
-        if (u < 5.4) return mix(TRAVEL + MH + 0.008, slotTop, minJerk(lin(4.6, 5.4, u)));
+        if (u < 3.2) return mix(bedTop, TRAVEL + MH + SL, minJerk(lin(2.5, 3.2, u)));
+        if (u < 4.6) return TRAVEL + MH + SL;
+        if (u < 5.4) return mix(TRAVEL + MH + SL, slotTop, minJerk(lin(4.6, 5.4, u)));
         return mix(slotTop, top, minJerk(lin(5.4, 6.2, u)));
     }
     function swing(u) {
@@ -891,6 +1012,9 @@ export function buildDfMA({ root, mats, accent, inst }) {
             const x = tail ? mix(slots[5].x, BED.x, minJerk(lin(6 * P, 6 * P + 2.2, t))) : trolleyX(n, u);
             const hy = tail ? 0.56 : hookY(n, u);
             trolley.position.x = x;
+            crab.position.x = x;
+            drum.rotation.y = hy * 40;
+            slings.visible = !tail && u >= 2.5 && u < 5.4;
             const top = GY;
             cable.position.set(x, (top + hy) / 2, -0.12);
             cable.scale.y = Math.max(0.001, top - hy);
@@ -900,7 +1024,7 @@ export function buildDfMA({ root, mats, accent, inst }) {
             if (!tail && u >= 2.5 && u < 5.4) {
                 const m = modules[n];
                 // Hang it from the spreader, so it swings with it.
-                _v.set(0, -0.008 - MH / 2, 0).applyAxisAngle(new THREE.Vector3(0, 0, 1), pivot.rotation.z);
+                _v.set(0, -SL - MH / 2, 0).applyAxisAngle(new THREE.Vector3(0, 0, 1), pivot.rotation.z);
                 m.position.set(x + _v.x, hy + _v.y, -0.12);
                 m.rotation.set(0, 0, pivot.rotation.z);
             }

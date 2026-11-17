@@ -21,16 +21,16 @@ Ten animated, interactive miniatures show how the research methods work. Each st
 
 | Where | Demonstration | What happens |
 | --- | --- | --- |
-| Lobby | One model, four ways of working | A tower highlighted floor by floor (BIM), a robot lapping it (robotics), a holographic sweep (XR), lit windows and data pulses (digital twin) |
-| Gallery IV | BIM | A three-storey frame assembles in construction order; click any element for its IFC class, storey, material, size and property-set values |
-| Gallery IV | Construction informatics | Truck, tower crane and building report to a site dashboard; a late delivery opens a gap between planned and actual progress, and re-sequenced lifts close it |
-| Gallery IV | Construction robotics | A six-joint arm lays a brick wall; each move is planned (dotted tool path), then executed with minimum-jerk motion solved by inverse kinematics |
-| Gallery IV | DfMA | Panels form a module on the factory bed; a gantry lifts, carries (with sway) and stacks six modules |
+| Lobby | One model, four ways of working | An eight-storey tower built element by element (slabs, columns, core, glazing, mullions, roof plant) on a planted plaza. Its storeys part into an exploded view and are named in turn (BIM); a four-wheeled rover laps the dais while its lidar builds a point cloud of the façades (robotics); a registration ring turns the same elements into a hologram with anchored annotations (XR); rooms light up through a working day while data runs up a riser and across to a small live copy (digital twin) |
+| Gallery IV | BIM | A three-storey frame assembles in construction order, with its core, mullioned curtain walls, entrance doors and roof parapet; click any element for its IFC class, storey, material, size and property-set values |
+| Gallery IV | Construction informatics | Truck, tower crane and a framed building report to a site dashboard; the slung load swings like a pendulum as the jib slews; a late delivery opens a gap between planned and actual progress, and re-sequenced lifts close it |
+| Gallery IV | Construction robotics | A six-joint arm (dress pack, padded gripper, a signal tower on its cabinet) lays a brick wall; each move is planned (dotted tool path), then executed with minimum-jerk motion solved by inverse kinematics |
+| Gallery IV | DfMA | Panels form a module on the factory bed; a braced gantry lifts each one on four slings, carries it (with sway) and stacks six modules |
 | Gallery IV | AI for construction | Three typed questions are interpreted into IFC classes and properties, matching elements are retrieved and highlighted, and answered |
 | Gallery VI | BIM interoperability | IFC elements pass through a mapping gate, are tessellated for the engine, gain colliders and a navigation mesh, and are checked element by element |
-| Gallery VI | Robot navigation | A floor plan becomes an occupancy grid; A* (computed live, explored cells shown) plans a route; a person blocks a doorway and the robot replans |
+| Gallery VI | Robot navigation | A floor plan becomes an occupancy grid; A* (computed live, explored cells shown) plans a route; a person walks into a doorway and the robot (wheels turning, lidar beam sweeping) replans |
 | Gallery VI | Extended reality | A registration plane turns a physical model into a hologram; a headset orbits and spatial overlays light up where it looks |
-| Gallery VI | Digital twin | A simulated working day: rooms fill, lights and CO₂ change, the twin colours each room by air quality and sends a ventilation boost back |
+| Gallery VI | Digital twin | A simulated working day: people appear at the windows as rooms fill, lights and CO₂ change, the twin colours each room by air quality and sends a ventilation boost back |
 
 Research-interest panels in the lobby link to their demonstration.
 
@@ -38,7 +38,7 @@ The models are built like architectural presentation models at about 1:16: each 
 
 ### Residents
 
-Two **cleaning robots** look after the lobby, Grand Hall and contact room: each leaves its charging dock, plans paths over the walkable grid, spirals over a spot, waits for anyone in its way, and drives home to charge when its battery is low (the dock shows the charge). Click a robot to see what it is doing.
+Two **cleaning robots** look after the lobby, Grand Hall and contact room: each leaves its charging dock, plans paths over the walkable grid, spirals over a spot, waits for anyone in its way, and drives home to charge when its battery is low (the dock shows the charge). The stone it has mopped stays damp behind it and dries over half a minute; it eases into turns, rides up onto the hall's runner, and its dock is plugged into a wall socket. Click a robot to see what it is doing.
 
 Every work has its caption sign-written on the wall above it, and wall texts, gallery introductions and the big lettering are painted straight onto the plaster: they take the wall's light, shadows and texture, with a little wear in the paint.
 
@@ -86,7 +86,7 @@ The **catalogue** button lists every work as text (the accessible view), and the
 |   |-- js/museum/          # world (building, lights), exhibits, art (canvas painters),
 |   |                       # controls, panels, post (bloom pipeline), reflect (mirrored floors),
 |   |                       # visitors, data, main, nav (walkable grid and A*),
-|   |                       # research + research-defs + demos-a/demos-b + demo-kit (demonstrations),
+|   |                       # research + research-defs + demos-a/demos-b/demos-c + demo-kit (demonstrations),
 |   |                       # companions (cleaning robots), cull (room culling), audio (optional music)
 |   |-- museum/             # Generated gallery copies, textures/ (Poly Haven surfaces), people/ (visitors)
 |   |-- images/             # Originals: certificates, covers, news, profile, projects, venues, ...

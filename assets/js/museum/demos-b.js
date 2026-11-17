@@ -246,6 +246,19 @@ export function buildTwin({ root, mats, accent }) {
         setInst(mullions, r * 2 + 1, wx, wy - 0.012, Z + D / 2 + 0.003, 0.128, 0.003, 0.002);
     }
     flush(frames, mullions);
+    // The people in each room, seen against its lit window: as many as the room's occupancy.
+    const PER_ROOM = 4;
+    const occupantMat = new THREE.MeshBasicMaterial({ color: '#39312a' });
+    const occupants = figures(root, Array.from({ length: 6 * PER_ROOM }, () => [0, 0, 0, 0]), occupantMat);
+    occupants.castShadow = false;
+    occupants.userData.noShadow = true;
+    occupants.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    occupants.frustumCulled = false;
+    // Entrance doors under the canopy, and plant on the roof.
+    part(new THREE.BoxGeometry(0.07, 0.034, 0.003), mats.dark, root, PX, 0.012 + 0.017, Z + D / 2 + 0.0015);
+    for (const sx of [-1, 1]) part(new THREE.BoxGeometry(0.03, 0.028, 0.002), mats.glass, root, PX + sx * 0.0165, 0.012 + 0.016, Z + D / 2 + 0.0035);
+    part(softBox(0.07, 0.03, 0.05, 0.004), mats.steel, root, PX - 0.09, 0.012 + H + 0.015, Z - 0.04);
+    part(new THREE.CylinderGeometry(0.005, 0.005, 0.2, 8), mats.steel, root, PX - 0.02, 0.012 + H + 0.012, Z - 0.04).rotation.z = Math.PI / 2;   // duct between the units
     part(new THREE.BoxGeometry(0.1, 0.04, 0.08), mats.grille, root, PX + 0.06, 0.012 + H + 0.02, Z - 0.03);
     const fan = new THREE.Group();
     fan.position.set(PX + 0.06, 0.012 + H + 0.045, Z - 0.03);
@@ -364,6 +377,19 @@ export function buildTwin({ root, mats, accent }) {
                 tint(wins, r, dark, lit, sstep(0.03, 0.12, occ(t, r)));
                 vols.setColorAt(r, heat(co2(t, r)));
             }
+            for (let r = 0; r < 6; r++) {
+                const { level, side } = room(r);
+                const here = occ(t, r) * PER_ROOM;
+                for (let k = 0; k < PER_ROOM; k++) {
+                    // Each arrives and leaves in turn; they shift about a little while they are in.
+                    const in01 = clamp(here - k, 0, 1);
+                    const x = PX + (side ? 0.085 : -0.085) + (k - (PER_ROOM - 1) / 2) * 0.027 + 0.005 * Math.sin(t * 0.7 + r * 3 + k * 1.9);
+                    const y = 0.012 + level * FH + FH * 0.55 - 0.034;
+                    const sc = 0.3 * in01;
+                    setInst(occupants, r * PER_ROOM + k, x, y, Z + D / 2 + 0.0027, sc, sc * (0.94 + 0.1 * ((k * 7 + r) % 3) / 2), sc * 0.08, 0.4 * Math.sin(t * 0.5 + k + r));
+                }
+            }
+            occupants.instanceMatrix.needsUpdate = true;
             fanAngle += dt * (4 + 14 * boost(t, 3));
             fan.rotation.y = fanAngle;
             for (let r = 0; r < 6; r++) {
@@ -644,9 +670,30 @@ export function buildNav({ root, mats, accent, inst }) {
     part(new THREE.CylinderGeometry(0.0085, 0.0095, 0.006, 16), mats.dark, robot, 0, 0.03, -0.004);                // lidar base
     part(new THREE.CylinderGeometry(0.0075, 0.0075, 0.007, 16), mats.glass, robot, 0, 0.0365, -0.004);            // lidar window
     part(new THREE.BoxGeometry(0.012, 0.004, 0.003), accentGlow(accentHex, 1.3), robot, 0, 0.02, 0.022);            // status light
-    const navWheel = new THREE.CylinderGeometry(0.0065, 0.0065, 0.004, 14);
+    const navWheel = new THREE.CylinderGeometry(0.0075, 0.0075, 0.005, 16);
     navWheel.rotateZ(Math.PI / 2);
-    for (const s2 of [-1, 1]) part(navWheel, mats.rubber, robot, s2 * 0.021, 0.0065, 0);
+    const navWheels = [-1, 1].map((s2) => {
+        const w = new THREE.Group();
+        w.position.set(s2 * 0.0215, 0.0075, 0);
+        robot.add(w);
+        part(navWheel, mats.rubber, w);
+        part(new THREE.BoxGeometry(0.0056, 0.003, 0.011), mats.steel, w);       // a bar across the hub: the rolling shows
+        return w;
+    });
+    part(new THREE.SphereGeometry(0.003, 8, 6), mats.steel, robot, 0, 0.003, 0.016);                               // caster
+    part(new THREE.CylinderGeometry(0.014, 0.014, 0.0012, 20), mats.dark, robot, 0, 0.0276, 0.004);                // top plate
+    const lidarHead = new THREE.Group();
+    lidarHead.position.set(0, 0.0365, -0.004);
+    robot.add(lidarHead);
+    part(new THREE.BoxGeometry(0.005, 0.003, 0.002), accentGlow('#ff5040', 1.5), lidarHead, 0, 0, 0.0075).userData.noShadow = true;
+    // The beam that sweeps the scanned sector.
+    const beam = new THREE.Group();
+    robot.add(beam);
+    const beamMat = new THREE.MeshBasicMaterial({ color: accent.clone().multiplyScalar(1.5), transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false });
+    part(new THREE.BoxGeometry(0.0012, 0.0006, 0.17), beamMat, beam, 0, 0.004, 0.085).userData.noShadow = true;
+    let lidarTurn = 0;
+    let wheelTurn = 0;
+    const lastPerson = new THREE.Vector3();
     const fanMat = new THREE.MeshBasicMaterial({ color: accent.clone(), transparent: true, opacity: 0.14, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
     // A sector ahead of the robot (its +z), flat on the floor.
     const fanGeo = new THREE.CircleGeometry(0.17, 24, Math.PI / 2 - 1.1, 2.2);
@@ -844,7 +891,7 @@ export function buildNav({ root, mats, accent, inst }) {
     let hum = 0;
 
     return {
-        render(t) {
+        render(t, dt = 0) {
             if (t < S.time - 1e-6) { reset(); shownRoute = shownOld = null; }
             while (S.time + 1 / 60 <= t) step(1 / 60);
             const sink = sstep(DURATION - 1.3, DURATION - 0.3, t);
@@ -877,13 +924,25 @@ export function buildNav({ root, mats, accent, inst }) {
             } else oldLine.visible = false;
             robot.position.set(S.x, 0.012, S.z);
             robot.rotation.y = S.heading;
+            wheelTurn += (S.v * dt) / 0.0075;
+            navWheels.forEach((w) => { w.rotation.x = wheelTurn; });
+            lidarTurn += dt * 16;
+            lidarHead.rotation.y = lidarTurn;
+            beam.rotation.y = 1.05 * Math.sin(t * 5.5);
             const sc = Math.min(easeOut(lin(0, 0.6, t)), 1 - sink);
             robot.scale.setScalar(Math.max(0.001, sc));
             const alarm = S.mode === 'stop' || (S.detectAt !== null && t - S.detectAt < 1.2);
             fanMat.color.copy(alarm ? red : accent);
             fanMat.opacity = (alarm ? 0.32 + 0.1 * Math.sin(t * 18) : 0.12) * (S.mode === 'arrived' ? 0.3 : 1) * sc;
-            person.position.copy(S.person).setY(0.012);
+            // The person turns to face the way they walk, with a step in it.
+            const moved = Math.hypot(S.person.x - lastPerson.x, S.person.z - lastPerson.z);
+            if (moved > 1e-5 && moved < 0.05) person.rotation.y = Math.atan2(S.person.x - lastPerson.x, S.person.z - lastPerson.z);
+            lastPerson.copy(S.person);
+            person.position.copy(S.person).setY(0.012 + (moved > 1e-5 ? 0.0022 * Math.abs(Math.sin(t * 13)) : 0));
+            person.rotation.z = moved > 1e-5 ? 0.05 * Math.sin(t * 13) : 0;
             person.visible = sink < 0.8;
+            beamMat.opacity = (alarm ? 0.95 : 0.6) * (S.mode === 'arrived' ? 0.3 : 1) * sc;
+            beamMat.color.copy(alarm ? red : accent).multiplyScalar(1.5);
             const arrived = S.mode === 'arrived' ? t - S.arriveAt : -1;
             goal.scale.setScalar(arrived >= 0 ? 1 + 0.6 * Math.sin(Math.min(arrived, 1.2) * Math.PI / 1.2) : 1);
             goalMat.opacity = 0.9 * (1 - sink);
