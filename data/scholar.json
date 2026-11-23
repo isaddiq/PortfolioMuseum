@@ -1,10 +1,10 @@
 {
-  "citations": 150,
+  "citations": 153,
   "hIndex": 6,
   "i10Index": 5,
   "scholarId": "wMH9sSgAAAAJ",
   "profileUrl": "https://scholar.google.com/citations?user=wMH9sSgAAAAJ&hl=en",
-  "updated": "2026-11-21",
+  "updated": "2026-11-23",
   "papers": [
     {
       "title": "Advancing BIM and game engine integration in the AEC industry: Innovations, challenges, and future directions",
@@ -13,12 +13,12 @@
     },
     {
       "title": "Data-driven integration framework for four-dimensional building information modeling simulation in modular construction: A case study approach",
-      "citations": 29,
+      "citations": 30,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=10613640687524639937"
     },
     {
       "title": "Client-centered detached modular housing: Natural language processing-enabled design recommender system",
-      "citations": 24,
+      "citations": 25,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=17542689973940571319"
     },
     {
@@ -52,6 +52,11 @@
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=10896345574957051228"
     },
     {
+      "title": "Cross-platform framework for semantic BIM-to-XR data exchange in immersive construction informatics",
+      "citations": 2,
+      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=12353156803235246799"
+    },
+    {
       "title": "Finite Element Analysis of Brick Masonry",
       "citations": 2,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=1689968747449099659"
@@ -60,11 +65,6 @@
       "title": "BIM-based visualization of downstream activities in DfMA-oriented modern methods of construction",
       "citations": 1,
       "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=14945949526660079034"
-    },
-    {
-      "title": "Cross-platform framework for semantic BIM-to-XR data exchange in immersive construction informatics",
-      "citations": 1,
-      "citedByUrl": "https://scholar.google.com/scholar?oi=bibs&hl=en&cites=12353156803235246799"
     },
     {
       "title": "INTEGRATION OF 4D BIM AND VR FOR INTERACTIVE MODULAR BUILDING MANUFACTURING SIMULATIONS IN A FACTORY-CONTROLLED ENVIRONMENT",
